@@ -5,6 +5,7 @@
 * [Examples](#Examples)
 * [Quickstart](#Quickstart)
 * [Core concepts](#Coreconcepts)
+	* [Reactivity](#Reactivity)
 	* [Reactive Values](#ReactiveValues)
 	* [Reactive Elements](#ReactiveElements)
 	* [Reactive Callbacks](#ReactiveCallbacks)
@@ -91,19 +92,32 @@ If everything works you should see the hello message.
 
 ## <a name='Coreconcepts'></a>Core concepts
 
-These are the most important functions you have to remember:
+These are the most important functions you have to understand:
 
-- `TAG` - Used to build reactive elements
-- `newValue` - Used to create reactive values
-- `newCallback` - Used to create reactive scopes (advanced)
+- `TAG` - Used to create one or more `ReactiveElement`
+- `newValue` - Used to create a `ReactiveValue`
+- `newCallback` - Used to create a `ReactiveCallback`
+
+### <a name='Reactivity'></a>Reactivity
 
 Reactivity is implemented in the following way:
 
-- A `ReactiveValue` can capture the function that is reading it
-- For this to work the function must be wrapped in a `ReactiveCallback`
-- The function will be called again if/when the value is updated
+- A `ReactiveValue` can capture the function that reads it
+  - this happens only if the function uses `v.read()` and ...
+  - if the function is wrapped in a `ReactiveCallback`
 
-Reactive elements allow functions to be defined as childs of the html structure. These function are automatically wrapped in a `ReactiveCallback` and when the values used inside the callback change, the html element is updated.
+> [!IMPORTANT]
+> this DOES NOT work if the function uses `v.value`
+
+> [!NOTE]
+> Other frameworks have additional methods/options like `untrack` to allow reading the value without triggering reactivity. This is not needed here, just access `v.value` directly.
+
+- The function will be called again if/when the value is updated
+  - this happens when you do `value.write()` or ...
+  - when you do `value.changed()`
+- Reactive elements allow functions to be defined as childs:
+  - these function are wrapped in a `ReactiveCallback`
+  - the child is automatically updated if/when needed
 
 ### <a name='ReactiveValues'></a>Reactive Values
 
