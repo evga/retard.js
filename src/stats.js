@@ -1,7 +1,10 @@
+import { ReactiveCallback } from "./callback";
+import { ReactiveValue } from "./value";
+
 export const stats = {
   _enabled: true,
-  callbacks: [],
-  values: [],
+  /** @type {ReactiveCallback[]} */ callbacks: [],
+  /** @type {ReactiveValue[]} */ values: [],
   tags: {},
   addTag: function (tagName) {
     if (stats.tags[tagName] === undefined) {
@@ -107,7 +110,7 @@ export function report({ tags = true, details = false } = {}) {
     tsection(`Values: ${stats.values.length}`),
     ...stats.values.map((c) => [
 
-      tspan(`[${typeof c.value}] ${c.value}`), // fuck this
+      tspan(`[${typeof c.value}] ${c.value}`), // careful here
       details ? tline("callbacks", c.callbacks.size) : "",
       details ? tline("reads", c.stats_reads) : "",
       details ? tline("writes", c.stats_writes) : "",

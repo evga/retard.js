@@ -44,10 +44,92 @@ class ReactiveStack {
 
 const stack = new ReactiveStack();
 
+class ReactiveValue {
+  /**
+   *
+   * @param {*} initialValue
+   */
+  constructor(initialValue) {
+    this.initialValue = initialValue;
+    this.value = initialValue;
+    this.callbacks = new Set();
+    this.resetBound = this.reset.bind(this);
+
+    if (stats._enabled) {
+      this.stats_reads = new Aggregate();
+      this.stats_writes = new Aggregate();
+      this.stats_changes = new Aggregate();
+      // @ts-ignore
+      stats.values.push(this);
+    }
+  }
+
+  #capture() {
+    const callback = stack.current;
+
+    if (callback && !this.callbacks.has(callback)) {
+      this.callbacks.add(callback);
+    }
+  }
+
+  reset() {
+    this.value = this.initialValue;
+    this.changed();
+  }
+
+  read() {
+    if (this.stats_reads) {
+      this.stats_reads.counter();
+    }
+
+    this.#capture();
+    return this.value;
+  }
+
+  write(newValue, { force = false } = {}) {
+    if (stack.length > 0)
+      throw new Error("infinite loop");
+
+    if (this.stats_writes) {
+      this.stats_writes.counter();
+    }
+
+    if (this.value !== newValue || force) {
+      this.value = newValue;
+      this.changed();
+    }
+
+    return this.value;
+  }
+
+  changed() {
+    const t0 = performance.now();
+    const toRemove = [];
+
+    for (const cb of this.callbacks) {
+      if (cb.execute() === StopSymbol) toRemove.push(cb);
+    }
+
+    for (const cb of toRemove) {
+      this.callbacks.delete(cb);
+      console.log("removed callback", cb);
+    }
+
+    if (this.stats_changes) {
+      this.stats_changes.update(performance.now() - t0);
+    }
+  }
+
+  toString() {
+    this.#capture();
+    return String(this.value);
+  }
+}
+
 const stats = {
   _enabled: true,
-  callbacks: [],
-  values: [],
+  /** @type {ReactiveCallback[]} */ callbacks: [],
+  /** @type {ReactiveValue[]} */ values: [],
   tags: {},
   addTag: function (tagName) {
     if (stats.tags[tagName] === undefined) {
@@ -84,6 +166,90 @@ class Aggregate {
   }
 }
 
+function tag(tagName, attr) {
+  const el = document.createElement(tagName);
+  if (typeof attr === "object") {
+    for (const a in attr) el.setAttribute(a, attr[a]);
+  }
+
+  return function (...args) {
+    el.append(...args.flat(Infinity));
+    return el;
+  };
+}
+
+function tsection(desc) {
+  return tag("tr")(
+    tag("td", { colspan: "6", style: "background-color: #000; color: #fff" })(
+      desc ?? ""
+    )
+  );
+}
+
+function tspan(desc) {
+  return tag("tr", { style: "border-bottom: 1px solid #666" })(
+    tag("td", { colspan: "6", style: "background-color: #ccc" })(desc ?? "")
+  );
+}
+
+function tline(desc, cnt, sum, min, max, avg) {
+  if (cnt instanceof Aggregate) {
+    const a = cnt;
+    cnt = a.cnt;
+    sum = a.sum;
+    min = a.vmin;
+    max = a.vmax;
+    avg = a.avg.toFixed(1);
+  }
+  const style1 = "background-color: #999999; color: #000";
+  const style2 = "text-align: center; background-color: #cccc66";
+  const style3 = "text-align: center; background-color: #6666cc";
+  return tag("tr")(
+    tag("td", { style: style1 })(desc ?? ""),
+    tag("td", { style: style2 })(cnt ?? ""),
+    tag("td", { style: style3 })(sum ?? ""),
+    tag("td", { style: style3 })(min ?? ""),
+    tag("td", { style: style3 })(max ?? ""),
+    tag("td", { style: style3 })(avg ?? "")
+  );
+}
+
+function callbackDesc(c) {
+  if (c.description) {
+    if (typeof c.description === "function") return c.description();
+    else return c.description;
+  } else if (c.userCallback) {
+    return String(c.userCallback);
+  } else {
+    return String(c.callback);
+  }
+}
+
+function report({ tags = true, details = false } = {}) {
+  return tag("table", {
+    style: "border-collapse: collapse; font-size: 12px; width: 100%"
+  })(
+    tline("metric", "cnt", "sum", "min", "max", "avg"),
+    tags ? tsection(`Tags`) : "",
+    ...Object.entries(stats.tags).map(([k, v]) => [tags ? tline(k, v) : ""]),
+    tsection(`Values: ${stats.values.length}`),
+    ...stats.values.map((c) => [
+
+      tspan(`[${typeof c.value}] ${c.value}`), // careful here
+      details ? tline("callbacks", c.callbacks.size) : "",
+      details ? tline("reads", c.stats_reads) : "",
+      details ? tline("writes", c.stats_writes) : "",
+      details ? tline("changes", c.stats_changes) : ""
+    ]),
+    tsection(`Callbacks: ${stats.callbacks.length}`),
+    ...stats.callbacks.map((c) => [
+      tspan(callbackDesc(c)),
+      details ? tline(`stopped=${c.stopped}`) : "",
+      details ? tline("execute", c.stats_execute) : ""
+    ])
+  );
+}
+
 const StopSymbol = Symbol("stop");
 
 class ReactiveCallback {
@@ -99,7 +265,7 @@ class ReactiveCallback {
     this.userCallback = null;
     this.stopped = false;
 
-    {
+    if (stats._enabled) {
       this.stats_execute = new Aggregate();
       // @ts-ignore
       stats.callbacks.push(this);
@@ -256,88 +422,6 @@ class ReactiveChild {
   }
 }
 
-class ReactiveValue {
-  /**
-   *
-   * @param {*} initialValue
-   */
-  constructor(initialValue) {
-    this.initialValue = initialValue;
-    this.value = initialValue;
-    this.callbacks = new Set();
-    this.resetBound = this.reset.bind(this);
-
-    {
-      this.stats_reads = new Aggregate();
-      this.stats_writes = new Aggregate();
-      this.stats_changes = new Aggregate();
-      // @ts-ignore
-      stats.values.push(this);
-    }
-  }
-
-  #capture() {
-    const callback = stack.current;
-
-    if (callback && !this.callbacks.has(callback)) {
-      this.callbacks.add(callback);
-    }
-  }
-
-  reset() {
-    this.value = this.initialValue;
-    this.changed();
-  }
-
-  read() {
-    if (this.stats_reads) {
-      this.stats_reads.counter();
-    }
-
-    this.#capture();
-    return this.value;
-  }
-
-  write(newValue, { force = false } = {}) {
-    if (stack.length > 0)
-      throw new Error("infinite loop");
-
-    if (this.stats_writes) {
-      this.stats_writes.counter();
-    }
-
-    if (this.value !== newValue || force) {
-      this.value = newValue;
-      this.changed();
-    }
-
-    return this.value;
-  }
-
-  changed() {
-    const t0 = performance.now();
-    const toRemove = [];
-
-    for (const cb of this.callbacks) {
-      if (cb.execute() === StopSymbol) toRemove.push(cb);
-    }
-
-    for (const cb of toRemove) {
-      this.callbacks.delete(cb);
-      console.log("removed callback", cb);
-    }
-
-    if (this.stats_changes) {
-      this.stats_changes.update(performance.now() - t0);
-    }
-  }
-
-  toString() {
-    this.#capture();
-    return String(this.value);
-  }
-}
-
 /**
  *
  * @param {HTMLInputElement} el
@@ -371,7 +455,9 @@ function bindInputElement(el, rv) {
 function bindSelectElement(el, rv) {
   const desc = () => `${el.tagName}.bind(${rv})`;
 
-  if (el.multiple) ; else {
+  if (el.multiple) {
+    // TODO
+  } else {
     // single
     const setRV = () => rv.write(el.value);
     const setEL = () => (el.value = rv.read());
@@ -416,7 +502,7 @@ class ReactiveElement {
 
     this.#init();
 
-    {
+    if (stats._enabled) {
       stats.addTag(this.element.tagName);
       //stats.elements.push(this);
     }

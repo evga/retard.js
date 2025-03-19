@@ -1,6 +1,6 @@
-import { TAG, newValue } from "./retard.js";
+import { TAG, newValue } from "../scripts/retard.js";
 
-export default function Counter({ start = 1 }) {
+function Counter({ start = 1 }) {
   const counter = newValue(start);
 
   const increment = function () {
@@ -12,3 +12,8 @@ export default function Counter({ start = 1 }) {
     .button(() => `count=${counter}`)
     .on("click", increment);
 }
+
+export default [
+  Counter({}),
+  Counter({ start: 55 })
+]

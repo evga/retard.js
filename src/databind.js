@@ -36,6 +36,7 @@ export function bindSelectElement(el, rv) {
   const desc = () => `${el.tagName}.bind(${rv})`;
 
   if (el.multiple) {
+    // TODO
   } else {
     // single
     const setRV = () => rv.write(el.value);
