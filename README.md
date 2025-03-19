@@ -144,9 +144,6 @@ name.read() // => 'Timmy'
 name.write('Jimmy')
 ```
 
-> [!NOTE]
-> This only works if you are inside a reactive callback.
-
 To force an update use the `.changed()` function:
 
 ```js
@@ -155,7 +152,7 @@ age.changed()
 ```
 
 > [!NOTE]
-> This works everywhere
+> `v.read()` works only if you are inside a reactive function. Using it from a normal function is the same as using `v.value` directly.
 
 > [!CAUTION]
 > Using `v.write()` while inside a reactive callback can create an infinite-loop. The library will raise an exception if you try to do it.
