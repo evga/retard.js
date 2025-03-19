@@ -4,10 +4,11 @@
 * [About](#About)
 * [Examples](#Examples)
 * [Quickstart](#Quickstart)
-* [Core concepts](#Coreconcepts)
+* [Concepts](#Concepts)
 	* [Reactivity](#Reactivity)
 	* [Reactive Values](#ReactiveValues)
 	* [Reactive Elements](#ReactiveElements)
+	* [Reactive Childs](#ReactiveChilds)
 	* [Reactive Callbacks](#ReactiveCallbacks)
 	* [Components](#Components)
 * [Reference](#Reference)
@@ -49,7 +50,7 @@ RETARD.js is an ES6 Module:
 - you NEED a web server
 
 > [!CAUTION]
-> Trying to load a module without a web server will result in an cors-whatever-bullshit error!
+> Trying to load a module without a web server will result in a cors-whatever-bullshit error!
 
 Download the latest version:
 
@@ -90,7 +91,7 @@ If everything works you should see the hello message.
 > [!IMPORTANT]
 > Your editor might try to import from `./retard` instead of `./retard.js` - the `.js` extension is needed to make it work.
 
-## <a name='Coreconcepts'></a>Core concepts
+## <a name='Concepts'></a>Concepts
 
 These are the most important functions you have to understand:
 
@@ -157,7 +158,7 @@ age.changed()
 > Using `v.read()` makes sense only if you are inside a reactive function. Using it from a normal function is the same as using `v.value` directly.
 
 > [!CAUTION]
-> Using `v.write()` while inside a reactive callback will create a massive black hole inside your browser (also known as infinite loop). The library will raise an exception if you try to do it.
+> Using `v.write()` while inside a reactive callback will create a massive black hole inside your browser (also known as infinite loop). The library will prevent this catastrophic event raising an exception if you try to do it.
 
 ### <a name='ReactiveElements'></a>Reactive Elements
 
@@ -284,6 +285,62 @@ TAG(document.body)(myDiv)
 // this is also OK
 TAG(document.body)(myDiv.element)
 ```
+
+### <a name='ReactiveChilds'></a>Reactive Childs
+
+So far we've created a bunch of html elements using javascript but there is nothing special about it. Let's introduce the concept of reactive childs.
+
+Look at this piece of code:
+
+```js
+let name = 'Timmy'
+
+TAG('#app')(
+  `Hello from ${name}`
+)
+
+name = 'Jimmy'
+```
+This will obviously print `Hello from Timmy` since the child element is created and appended to the `#app` before we execute the last line.
+
+Now look at this:
+
+```js
+const name = newValue('Timmy')
+
+TAG('#app')(
+  () => `Hello from ${name.read()}`
+)
+
+name.write('Jimmy')
+```
+
+This will print `Hello from Jimmy` - this is a reactive child:
+- we use `newValue` to make a `ReactiveValue`
+- we convert the child into a function adding the [arrow function expression](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions)
+- we use `.read()` to print the value because...
+  - we are now inside a `ReactiveCallback`
+- we use the `.write()` method to update the value
+
+> [!TIP]
+> It is possible to omit the `.read()` call when you are creating strings with the template syntax - since `ReactiveValue.toString()` is also capable of capturing the current function you can just write `Hello from ${name}`
+
+Reactive childs can be nested and you can have many of them, mixed with normal text childs or non-reactive childs:
+
+```js
+TAG('#app')(
+  'a text node',
+  TAG.div('hello'), // non reactive child
+  TAG.div(() => `${greeting}`), // reactive version
+  () => [ // a reactive child returning two elements
+    `${greeting}`, // first callback
+    TAG.div(
+      () => `${name}` // second callback
+    )
+  ]
+)
+```
+
 
 ### <a name='ReactiveCallbacks'></a>Reactive Callbacks
 ### <a name='Components'></a>Components
