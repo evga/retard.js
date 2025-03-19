@@ -123,7 +123,9 @@ Reactivity is implemented in the following way:
 
 ### <a name='ReactiveValues'></a>Reactive Values
 
-A reactive value is any value that is wrapped inside a `ReactiveValue` object. Use the `newValue` function to create them:
+A reactive value is any value that is wrapped inside a `ReactiveValue` object.
+
+Use the `newValue` function to create them:
 
 ```js
 const name = newValue('Timmy');
