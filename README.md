@@ -42,6 +42,8 @@ There is a page with live examples and source code:
 
 - [RETARD.js - Examples](https://evga.github.io/retard.js/)
 
+You can also check the `/docs/examples` folder.
+
 ## <a name='Quickstart'></a>Quickstart
 
 RETARD.js is an ES6 Module:

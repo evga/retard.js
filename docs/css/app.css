@@ -27,6 +27,8 @@ h1 {
   cursor: pointer;
   box-shadow: 2px 2px #000;
   margin-bottom: 10px;
+  font-weight: bold;
+  font-size: 14px;
 }
 
 .title {
@@ -35,7 +37,7 @@ h1 {
 
 .live {
   padding: 10px;
-  background-color: white;
+  background-color: #ccc;
   color: black;
   min-width: 300px;
 }
@@ -51,5 +53,6 @@ pre {
 }
 
 code {
+  font-size: 14px;
 
 }

@@ -2,6 +2,8 @@ import { TAG } from "./retard.js";
 import counter from "../examples/counter.js";
 import todolist from "../examples/todolist.js";
 
+const devmode = todolist;
+
 const examples = [
   {
     els: counter,
@@ -31,7 +33,7 @@ async function buildExample(obj) {
     TAG.div(
       TAG.div(obj.els).attr({ class: 'live' }),
       TAG.pre(TAG.code(js))
-    ).attr({ class: 'example hidden' })
+    ).attr({ class: `example ${obj.els === devmode ? '' : 'hidden'}` })
   ];
 
 }
