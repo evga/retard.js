@@ -108,12 +108,12 @@ Reactivity is implemented in the following way:
 - The function will be called again if/when the value is updated
   - this happens when you do `value.write()` or ...
   - when you do `value.changed()`
-- Reactive elements allow functions to be defined as childs:
-  - these function are wrapped in a `ReactiveCallback`
+- A `ReactiveElement` allow functions to be defined as childs:
+  - these functions are wrapped in a `ReactiveCallback`
   - the child is automatically updated if/when needed
 
 > [!IMPORTANT]
-> using `v.value` directly DOES NOT trigger reactivity
+> Using `v.value` directly DOES NOT trigger reactivity
 
 > [!NOTE]
 > Other frameworks have additional methods/options like `untrack` to allow reading the value without triggering reactivity. This is not needed here, just access `v.value` directly.
