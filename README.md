@@ -341,7 +341,7 @@ TAG('#app')(
 In this example:
 - changing `greeting` will:
   - change the content of the second div
-  - execute the first function, returning a new array
+  - execute the first function, creating a new array
 - changing `name` will:
   - change the content of the last div
 
