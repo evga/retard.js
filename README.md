@@ -333,17 +333,25 @@ TAG('#app')(
   TAG.div('hello'), // non reactive child
   TAG.div(() => `${greeting}`), // reactive version
   () => [ // a reactive child returning two elements
-    `${greeting}`, // first callback
-    TAG.div(
-      () => `${name}` // second callback
-    )
+    `${greeting}`,
+    TAG.div(() => `${name}`) // nested function
   ]
 )
 ```
+In this example:
+- changing `greeting` will:
+  - change the content of the second div
+  - execute the first function, returning a new array
+- changing `name` will:
+  - change the content of the last div
 
+### Reactive Attributes
 
-### <a name='ReactiveCallbacks'></a>Reactive Callbacks
+TODO
+
 ### <a name='Components'></a>Components
+
+TODO
 
 ## <a name='Reference'></a>Reference
 
