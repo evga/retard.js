@@ -9,7 +9,7 @@
 	* [Reactive Values](#ReactiveValues)
 	* [Reactive Elements](#ReactiveElements)
 	* [Reactive Childs](#ReactiveChilds)
-	* [Reactive Callbacks](#ReactiveCallbacks)
+	* [Reactive Attributes](#ReactiveAttributes)
 	* [Components](#Components)
 * [Reference](#Reference)
 	* [ReactiveElement](#ReactiveElement)
@@ -345,7 +345,7 @@ In this example:
 - changing `name` will:
   - change the content of the last div
 
-### Reactive Attributes
+### <a name='ReactiveAttributes'></a>Reactive Attributes
 
 TODO
 
