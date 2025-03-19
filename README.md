@@ -154,10 +154,10 @@ age.changed()
 ```
 
 > [!NOTE]
-> `v.read()` works only if you are inside a reactive function. Using it from a normal function is the same as using `v.value` directly.
+> Using `v.read()` makes sense only if you are inside a reactive function. Using it from a normal function is the same as using `v.value` directly.
 
 > [!CAUTION]
-> Using `v.write()` while inside a reactive callback can create an infinite-loop. The library will raise an exception if you try to do it.
+> Using `v.write()` while inside a reactive callback can create an infinite-loop. The library can detect this situation and will raise an exception if you try to do it.
 
 ### <a name='ReactiveElements'></a>Reactive Elements
 
