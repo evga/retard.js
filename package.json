@@ -1,0 +1,10 @@
+{
+    "devDependencies": {
+        "@rollup/plugin-terser": "^0.4.4",
+        "rollup": "^4.36.0"
+    },
+    "scripts": {
+        "devmode": "rollup --config --watch",
+        "build": "rollup --config"
+    }
+}
