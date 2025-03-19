@@ -106,11 +106,11 @@ Reactivity is implemented in the following way:
   - this happens only if the function uses `v.read()` and ...
   - if the function is wrapped in a `ReactiveCallback`
 
-> [!IMPORTANT]
-> this DOES NOT work if the function uses `v.value`
+  > [!IMPORTANT]
+  > this DOES NOT work if the function uses `v.value`
 
-> [!NOTE]
-> Other frameworks have additional methods/options like `untrack` to allow reading the value without triggering reactivity. This is not needed here, just access `v.value` directly.
+  > [!NOTE]
+  > Other frameworks have additional methods/options like `untrack` to allow reading the value without triggering reactivity. This is not needed here, just access `v.value` directly.
 
 - The function will be called again if/when the value is updated
   - this happens when you do `value.write()` or ...
