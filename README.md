@@ -161,7 +161,9 @@ age.changed()
 
 ### <a name='ReactiveElements'></a>Reactive Elements
 
-The `TAG` object can be used to:
+A `ReactiveElement` object is a wrapper for the `Element` object returned by the `document.createElement()` function.
+
+Use the `TAG` object to create a `ReactiveElement`:
 
 ```js
 // Create new elements
@@ -206,10 +208,10 @@ TAG('div')(
   TAG('button')('Click me!')
 )
 ```
-I think the first way (property syntax) is cooler so I'm gonna use it for the rest of this document.
+I personally prefer the property syntax so I'm gonna use it for the rest of this document.
 
 > [!NOTE]
-> Most javascript libraries that allow the creation of elements with pure code use many parameters inside a single function call, like `newTag('div', {attr: value}, [child1, child2, ...])` - this quickly becomes a nightmare to maintain since there are too many nested parenthesis eventually. This library takes a different approach.
+> Most javascript libraries that allow the creation of elements with pure code use many parameters inside a single function call, like `newTag('div', {attr: value}, [child1, child2, ...])` - this quickly becomes a nightmare to maintain since there are too many nested parenthesis eventually.
 
 > [!TIP]
 > You can rename the `TAG` object when you import it!
@@ -221,16 +223,67 @@ $.div(
   $.button('Click me!')
 )
 ```
-Elements created this way are wrapped inside a class called `ReactiveElement` that allows further modifications:
+Once you have a `ReactiveElement` you can enhance it with additional attributes and events:
 
-- use `.on()` to attach normal event handlers
+- use `.on()` to attach event handlers
 - use `.attr()` to change the element's attributes
-- use `.bind()` to perform data-binding for common controls
-- use `.ref()` to save a reference to the element
-- and many more ...
+- etc...
 
-> [!NOTE]
-> Since elements are wrapped they are not usable directly but needs to be un-wrapped first. This operation happens automatically for elements defined as childs of `TAG` objects.
+These are all the methods of `ReactiveElement` and they return the same object so you can chain them (similar to jQuery).
+
+For example if you have this html:
+```html
+<form class="myForm" onsubmit="submitForm(event)">
+  <input type="text" name="name">
+  <button type="submit">Submit</button>
+</form>
+
+<script>
+  function submitForm(e) {
+    if (!confirm('Are you sure?'))
+      e.preventDefault();
+  }
+</script>
+```
+
+This is the equivalent code in RETARD.js:
+
+```js
+TAG.form(
+  TAG
+    .input()
+    .attr({ type: 'text', name: 'name' }),
+  TAG
+    .button('Submit')
+    .attr({ type: 'submit' }),
+)
+.attr({ class: 'myForm' })
+.on('click', function(e) {
+  if (!confirm('Are you sure?'))
+    e.preventDefault();
+})
+```
+
+If you have a `ReactiveElement` and you need to append it inside another DOM node you will have to get a reference to the wrapped object first using the  `.element` property.
+
+This operation happens automatically for elements defined as childs of `TAG` objects.
+
+```js
+// this is a ReactiveElement
+const myDiv = TAG.div() 
+
+// this is WRONG
+document.body.append(myDiv) 
+
+// this is OK
+document.body.append(myDiv.element)
+
+// this is also OK
+TAG(document.body)(myDiv)
+
+// this is also OK
+TAG(document.body)(myDiv.element)
+```
 
 ### <a name='ReactiveCallbacks'></a>Reactive Callbacks
 ### <a name='Components'></a>Components
