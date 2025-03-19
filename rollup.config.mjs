@@ -8,6 +8,10 @@ export default {
       format: "esm",
     },
     {
+      file: "docs/scripts/retard.js",
+      format: "esm",
+    },
+    {
       file: "bundle/retard.min.js",
       format: "esm",
 

@@ -1,4 +1,4 @@
-import { TAG } from "../bundle/retard.js";
+import { TAG } from "./retard.js";
 import Counter from "./counter.js";
 
 const CounterTags = () =>

@@ -1,4 +1,4 @@
-import { TAG, newValue } from "../bundle/retard.js";
+import { TAG, newValue } from "./retard.js";
 
 export default function Counter({ start = 1 }) {
   const counter = newValue(start);
