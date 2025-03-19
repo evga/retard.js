@@ -4,7 +4,7 @@
 * [About](#About)
 * [Examples](#Examples)
 * [Quickstart](#Quickstart)
-* [Basic usage](#Basicusage)
+* [Core concepts](#Coreconcepts)
 	* [Reactive Values](#ReactiveValues)
 	* [Reactive Elements](#ReactiveElements)
 	* [Reactive Callbacks](#ReactiveCallbacks)
@@ -13,6 +13,7 @@
 	* [ReactiveElement](#ReactiveElement)
 	* [ReactiveValue](#ReactiveValue)
 	* [ReactiveCallback](#ReactiveCallback)
+* [Performance](#Performance)
 
 <!-- vscode-markdown-toc-config
 	numbering=false
@@ -62,6 +63,7 @@ Given the most basic folder structure:
   - retard.js
 
 Put this inside `index.html`
+
 ```html
 <!DOCTYPE html>
 <html>
@@ -73,6 +75,7 @@ Put this inside `index.html`
 ```
 
 Put this inside `app.js`
+
 ```js
 import { TAG } from './retard.js'
 
@@ -86,24 +89,32 @@ If everything works you should see the hello message.
 > [!IMPORTANT]
 > Your editor might try to import from `./retard` instead of `./retard.js` - the `.js` extension is needed to make it work.
 
-## <a name='Basicusage'></a>Basic usage
+## <a name='Coreconcepts'></a>Core concepts
 
-Everything you can do is hidden behind a bunch of public objects that you have to remember:
+These are the most important functions you have to remember:
 
-- `TAG` - Create and configure reactive elements
-- `newValue` - Create reactive values
-- `newCallback` - Create reactive functions (advanced)
+- `TAG` - Used to build reactive elements
+- `newValue` - Used to create reactive values
+- `newCallback` - Used to create reactive scopes (advanced)
+
+Reactivity is implemented in the following way:
+
+- A `ReactiveValue` can capture the function that is reading it
+- For this to work the function must be wrapped in a `ReactiveCallback`
+- The function will be called again if/when the value is updated
+
+Reactive elements allow functions to be defined as childs of the html structure. These function are automatically wrapped in a `ReactiveCallback` and when the values used inside the callback change, the html element is updated.
 
 ### <a name='ReactiveValues'></a>Reactive Values
 
-A reactive value is just a plain javascript value or object that is wrapped using the `newValue` function:
+A reactive value is any value that is wrapped inside a `ReactiveValue` object. Use the `newValue` function to create them:
 
 ```js
 const name = newValue('Timmy');
 const age = newValue(12);
 ```
 
-Use `.value` to access the wrapped value:
+Use `.value` to access the wrapped value directly:
 
 ```js
 name.value // => 'Timmy'
@@ -117,13 +128,15 @@ name.read() // => 'Timmy'
 name.write('Jimmy')
 ```
 
+> [!NOTE]
+> This only works if you are inside a reactive callback.
+
 To force an update use the `.changed()` function:
 
-```
+```js
 age.value++
 age.changed()
 ```
-
 
 ### <a name='ReactiveElements'></a>Reactive Elements
 
@@ -135,7 +148,7 @@ The `TAG` object can be used to:
 TAG('div')  // function call syntax
 TAG.div     // property syntax
 
-// Attach to exisiting elements
+// Attach to existing elements
 
 TAG(document.body) // using the element directly
 TAG('#app')        // using the element ID
@@ -175,7 +188,7 @@ TAG('div')(
 I think the first way (property syntax) is cooler so I'm gonna use it for the rest of this document.
 
 > [!NOTE]
-> Most javascript libraries that allow the creation of elements with pure code use many parameters inside a single function call, like `newTag('div', {attr: value}, [child1, child2, ...])` - this quicky becomes a nightmare to mantain since there are too many nested parenthesis eventually. This library takes a different approach.
+> Most javascript libraries that allow the creation of elements with pure code use many parameters inside a single function call, like `newTag('div', {attr: value}, [child1, child2, ...])` - this quickly becomes a nightmare to maintain since there are too many nested parenthesis eventually. This library takes a different approach.
 
 > [!TIP]
 > You can rename the `TAG` object when you import it!
@@ -191,7 +204,7 @@ Elements created this way are wrapped inside a class called `ReactiveElement` th
 
 - use `.on()` to attach normal event handlers
 - use `.attr()` to change the element's attributes
-- use `.bind()` to perform databinding for common controls
+- use `.bind()` to perform data-binding for common controls
 - use `.ref()` to save a reference to the element
 - and many more ...
 
@@ -209,4 +222,9 @@ Elements created this way are wrapped inside a class called `ReactiveElement` th
 
 ### <a name='ReactiveCallback'></a>ReactiveCallback
 
-## Performance
+## <a name='Performance'></a>Performance
+
+TODO: talk about the stats module
+
+TODO: talk about breaking trees into smaller functions
+
