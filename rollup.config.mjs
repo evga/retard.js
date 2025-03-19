@@ -1,6 +1,7 @@
 import terser from "@rollup/plugin-terser";
 
 export default {
+  treeshake: false,
   input: "src/api.js",
   output: [
     {
@@ -14,7 +15,6 @@ export default {
     {
       file: "bundle/retard.min.js",
       format: "esm",
-
       plugins: [terser({ mangle: true })],
     }
   ]
