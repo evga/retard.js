@@ -108,9 +108,12 @@ Reactivity is implemented in the following way:
 - The function will be called again if/when the value is updated
   - this happens when you do `value.write()` or ...
   - when you do `value.changed()`
-- A `ReactiveElement` allow functions to be defined as childs:
-  - these functions are wrapped in a `ReactiveCallback`
-  - the child is automatically updated if/when needed
+- A `ReactiveElement` allows:
+  - functions to be defined as childs:
+    - these functions are wrapped in a `ReactiveCallback`
+    - the child is automatically updated if/when the function's reactive values change
+  - binding a `ReactiveValue` to the element's attributes
+  - ...
 
 > [!IMPORTANT]
 > Using `v.value` directly DOES NOT trigger reactivity
