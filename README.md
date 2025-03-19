@@ -154,6 +154,12 @@ age.value++
 age.changed()
 ```
 
+> [!NOTE]
+> This works everywhere
+
+> [!CAUTION]
+> Using `v.write()` while inside a reactive callback can create an infinite-loop. The library will raise an exception if you try to do it.
+
 ### <a name='ReactiveElements'></a>Reactive Elements
 
 The `TAG` object can be used to:
