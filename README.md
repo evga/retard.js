@@ -1,22 +1,31 @@
 # RETARD.js - Reactivity for Dummies
 
-- [About](#about)
-- [Quickstart](#quickstart)
-- [Basic usage](#basic-usage)
-  - [Reactive elements](#reactive-elements)
-  - [Reactive values](#reactive-values)
-  - [Reactive callbacks](#reactive-callbacks)
-  - [Components](#components)
-- [Performance](#performance)
-- [Documentation](#documentation)
-- [Credits](#credits)
+<!-- vscode-markdown-toc -->
+* [About](#About)
+* [Examples](#Examples)
+* [Quickstart](#Quickstart)
+* [Basic usage](#Basicusage)
+	* [Reactive Values](#ReactiveValues)
+	* [Reactive Elements](#ReactiveElements)
+	* [Reactive Callbacks](#ReactiveCallbacks)
+	* [Components](#Components)
+* [Reference](#Reference)
+	* [ReactiveElement](#ReactiveElement)
+	* [ReactiveValue](#ReactiveValue)
+	* [ReactiveCallback](#ReactiveCallback)
 
-## About
+<!-- vscode-markdown-toc-config
+	numbering=false
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+
+## <a name='About'></a>About
 
 RETARD.js is a small framework that:
 
 - Just works (no JSX/React/Node.js bullshit)
-- Is meant for personal/quick projects
+- Is meant for personal / quick projects
 - Uses vanilla javascript for:
   - components: a simple javascript function
   - structure: html tags are created using code
@@ -24,7 +33,13 @@ RETARD.js is a small framework that:
 - Supports data binding
 - ...
 
-## Quickstart
+## <a name='Examples'></a>Examples
+
+There is a page with live examples and source code:
+
+- [RETARD.js - Examples](https://evga.github.io/retard.js/)
+
+## <a name='Quickstart'></a>Quickstart
 
 RETARD.js is an ES6 Module:
 
@@ -71,7 +86,7 @@ If everything works you should see the hello message.
 > [!IMPORTANT]
 > Your editor might try to import from `./retard` instead of `./retard.js` - the `.js` extension is needed to make it work.
 
-## Basic usage
+## <a name='Basicusage'></a>Basic usage
 
 Everything you can do is hidden behind a bunch of public objects that you have to remember:
 
@@ -79,7 +94,7 @@ Everything you can do is hidden behind a bunch of public objects that you have t
 - `newValue` - Create reactive values
 - `newCallback` - Create reactive functions (advanced)
 
-### Reactive Values
+### <a name='ReactiveValues'></a>Reactive Values
 
 A reactive value is just a plain javascript value or object that is wrapped using the `newValue` function:
 
@@ -110,7 +125,7 @@ age.changed()
 ```
 
 
-### Reactive Elements
+### <a name='ReactiveElements'></a>Reactive Elements
 
 The `TAG` object can be used to:
 
@@ -183,5 +198,15 @@ Elements created this way are wrapped inside a class called `ReactiveElement` th
 > [!NOTE]
 > Since elements are wrapped they are not usable directly but needs to be un-wrapped first. This operation happens automatically for elements defined as childs of `TAG` objects.
 
-### Reactive Callbacks
-### Components
+### <a name='ReactiveCallbacks'></a>Reactive Callbacks
+### <a name='Components'></a>Components
+
+## <a name='Reference'></a>Reference
+
+### <a name='ReactiveElement'></a>ReactiveElement
+
+### <a name='ReactiveValue'></a>ReactiveValue
+
+### <a name='ReactiveCallback'></a>ReactiveCallback
+
+## Performance
