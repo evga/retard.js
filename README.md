@@ -127,12 +127,6 @@ Reactivity is implemented in the following way:
   - 2-way data-bind with specific elements
   - ...
 
-> [!IMPORTANT]
-> Using `v.value` directly DOES NOT trigger reactivity
-
-> [!NOTE]
-> Other frameworks have additional methods/options like `untrack` to allow reading the value without triggering reactivity. This is not needed here, just access `v.value` directly.
-
 ### <a name='ReactiveValues'></a>Reactive Values
 
 A reactive value is any value that is wrapped inside a `ReactiveValue` object.
@@ -165,11 +159,17 @@ age.value++
 age.changed()
 ```
 
+> [!IMPORTANT]
+> Using `v.value` directly DOES NOT trigger reactivity
+
+> [!NOTE]
+> Other frameworks provide ways to read the value without triggering reactivity. This is not needed here, just access `v.value` directly.
+
 > [!NOTE]
 > Using `v.read()` makes sense only if you are inside a reactive function. Using it from a normal function is the same as using `v.value` directly.
 
 > [!CAUTION]
-> Using `v.write()` while inside a reactive callback will create a massive black hole inside your browser (also known as infinite loop). The library will prevent this catastrophic event raising an exception if you try to do it.
+> Using `v.write()` inside a reactive callback will create a massive black hole (also known as infinite loop). To avoid this, the library throws an exception if you try to do it.
 
 ### <a name='ReactiveElements'></a>Reactive Elements
 
