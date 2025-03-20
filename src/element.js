@@ -1,6 +1,8 @@
 import { bindElement } from "./databind.js";
 import { assert } from "./util.js";
 import { ReactiveContainer } from "./container.js";
+import { ReactiveValue } from "./value.js";
+import { ReactiveCallback } from "./callback.js";
 
 // <key>
 const eventKeyRegex = new RegExp("^<(\\w+)>$");
@@ -28,7 +30,17 @@ export class ReactiveElement {
     assert(typeof obj === "object");
 
     for (const key in obj) {
-      this.element.setAttribute(key, obj[key]);
+      const value = obj[key];
+
+      if (value instanceof ReactiveValue) {
+        const self = this;
+        const cb = new ReactiveCallback(() => 
+          self.element.setAttribute(key, value.read()));
+        cb.description = `Reactive attribute ${this.element.tagName}.${key} = ${value}`;
+        cb.execute();
+      } else {
+        this.element.setAttribute(key, value);
+      }
     }
 
     return this;

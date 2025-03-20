@@ -12,6 +12,7 @@
 	* [Reactive Attributes](#ReactiveAttributes)
 	* [Components](#Components)
 * [ReactiveElement](#ReactiveElement)
+	* [attr(attributes)](#attrattributes)
 	* [bind(value)](#bindvalue)
 	* [on(eventName, listener, [options])](#oneventNamelisteneroptions)
 * [ReactiveValue](#ReactiveValue)
@@ -344,6 +345,36 @@ TODO
 ## <a name='ReactiveElement'></a>ReactiveElement
 
 All methods of this class return the current element to allow chaining.
+
+### <a name='attrattributes'></a>attr(attributes)
+
+Set element attributes. If the attribute is a `ReactiveValue` performs 1-way data binding.
+
+**Parameters**:
+- value - Must be an object
+
+**Normal usage**:
+```js
+$.div().attr({
+  id: 'myDiv',
+  class: 'myCssClass'
+})
+```
+
+**Reactive example**:
+```js
+const dynamicStyle = newValue('color: red')
+
+$.div('content').attr({
+  id: 'myDiv',
+  style: dynamicStyle
+})
+
+// later ...
+
+dynamicStyle.write('color: green')
+```
+
 
 ### <a name='bindvalue'></a>bind(value)
 
