@@ -1,5 +1,5 @@
 import { assert, Aggregate } from "./util.js";
-import { stack } from "./internal.js";
+import { stack } from "./stack.js";
 import config from "./config.js";
 
 export const StopSymbol = Symbol("stop");

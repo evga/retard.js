@@ -1,6 +1,4 @@
-import { assert } from "./util.js";
-
-export class ReactiveStack {
+class Stack {
   #stack = [];
 
   constructor() { }
@@ -24,3 +22,5 @@ export class ReactiveStack {
     return this.#stack[this.#stack.length - 1];
   }
 }
+
+export const stack = new Stack();

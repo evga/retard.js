@@ -1,5 +1,5 @@
 import { StopSymbol } from "./callback.js";
-import { stack } from "./internal.js";
+import { stack } from "./stack.js";
 import { Aggregate } from "./util.js";
 import config from "./config.js";
 
@@ -74,7 +74,7 @@ export class ReactiveValue {
 
     for (const cb of toRemove) {
       this.callbacks.delete(cb);
-      console.log("removed callback", cb);
+      //console.log("removed callback", cb);
     }
 
     if (this.changedStats) {

@@ -25,7 +25,7 @@ class Aggregate {
   }
 }
 
-class ReactiveStack {
+class Stack {
   #stack = [];
 
   constructor() { }
@@ -50,7 +50,7 @@ class ReactiveStack {
   }
 }
 
-const stack = new ReactiveStack();
+const stack = new Stack();
 
 var config = {
   enableStats: true
@@ -177,7 +177,7 @@ class ReactiveValue {
 
     for (const cb of toRemove) {
       this.callbacks.delete(cb);
-      console.log("removed callback", cb);
+      //console.log("removed callback", cb);
     }
 
     if (this.changedStats) {
