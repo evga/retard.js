@@ -420,6 +420,12 @@ class ReactiveChild {
   }
 }
 
+// <key>
+const eventKeyRegex = new RegExp("^<(\\w+)>$");
+
+// name[attr=value]
+const eventFilterRegex = new RegExp("^(\\w+)\\[(\\w+)=(\\w+)]$");
+
 class ReactiveElement {
   /**
    * @param {Element} element
@@ -428,7 +434,7 @@ class ReactiveElement {
   constructor(element, childArray) {
     assert(element instanceof Element);
     assert(Array.isArray(childArray));
-    
+
     this.container = new ReactiveContainer(element, childArray);
   }
 
@@ -446,18 +452,41 @@ class ReactiveElement {
     return this;
   }
 
-  bind(rv) {
-    bindElement(this.element, rv);
+  bind(value) {
+    bindElement(this.element, value);
     return this;
   }
 
-  on(eventName, listener) {
-    this.element.addEventListener(eventName, listener);
-    return this;
-  }
+  on(eventName, listener, options) {
 
-  onclick(listener) {
-    this.on("click", listener);
+    // addEventListener
+    // [type] - A case-sensitive string
+    // [listener] - null | object with handleEvent() | function
+
+    if (typeof eventName === 'string' && typeof listener === 'function') {
+      
+      const eventKey = eventKeyRegex.exec(eventName);
+      if (eventKey) eventName = `keydown[key=${eventKey[1]}]`;
+
+      const eventFilter = eventFilterRegex.exec(eventName);
+
+      if (eventFilter) {
+        const name = eventFilter[1];
+        const attrName = eventFilter[2];
+        const attrValue = eventFilter[3];
+
+        this.element.addEventListener(name, function (e) {
+          if (e[attrName] && e[attrName] == attrValue) // NO strict equality
+            listener.call(this, e); // keep this = Element
+        }, options);
+
+      } else {
+        this.element.addEventListener(eventName, listener, options);
+      }
+    } else {
+      this.element.addEventListener(eventName, listener, options);
+    }
+
     return this;
   }
 }

@@ -11,10 +11,11 @@
 	* [Reactive Childs](#ReactiveChilds)
 	* [Reactive Attributes](#ReactiveAttributes)
 	* [Components](#Components)
-* [Reference](#Reference)
-	* [ReactiveElement](#ReactiveElement)
-	* [ReactiveValue](#ReactiveValue)
-	* [ReactiveCallback](#ReactiveCallback)
+* [ReactiveElement](#ReactiveElement)
+	* [bind(value)](#bindvalue)
+	* [on(eventName, listener, [options])](#oneventNamelisteneroptions)
+* [ReactiveValue](#ReactiveValue)
+* [ReactiveCallback](#ReactiveCallback)
 * [Performance](#Performance)
 
 <!-- vscode-markdown-toc-config
@@ -339,13 +340,58 @@ TODO
 
 TODO
 
-## <a name='Reference'></a>Reference
 
-### <a name='ReactiveElement'></a>ReactiveElement
+## <a name='ReactiveElement'></a>ReactiveElement
 
-### <a name='ReactiveValue'></a>ReactiveValue
+All methods of this class return the current element to allow chaining.
 
-### <a name='ReactiveCallback'></a>ReactiveCallback
+### <a name='bindvalue'></a>bind(value)
+
+Perform 2-way data binding specific to each type of element.
+
+**Parameters**:
+- value - Must be a `ReactiveValue`
+
+**Supported controls and value types**:
+- HTMLInputElement
+  - text (string)
+  - checkbox (boolean)
+- HTMLSelectElement
+  - single selection (string)
+
+**Example**:
+```js
+const value = newValue('Timmy')
+
+$.input().bind(value)
+```
+
+### <a name='oneventNamelisteneroptions'></a>on(eventName, listener, [options])
+
+Wrapper for [addEventListener](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener) with some additions.
+
+**Parameters**:
+- see [addEventListener](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener)
+
+
+**Normal usage**:
+```js
+$.button.on('click', ...)
+```
+
+**Extension: specific attribute**
+```js
+$.input.on('keydown[key=Enter]', ...)
+```
+
+**Extension: specific keydown**
+```js
+$.input.on('<Enter>', ...)
+```
+
+## <a name='ReactiveValue'></a>ReactiveValue
+
+## <a name='ReactiveCallback'></a>ReactiveCallback
 
 ## <a name='Performance'></a>Performance
 

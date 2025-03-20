@@ -8,7 +8,7 @@ function TodoList() {
   ]);
 
   function newTodo(e) {
-    if (e.keyCode === 13 && this.value) {
+    if (this.value) {
       todos.value.push({ text: this.value, done: newValue(false) });
       todos.changed(); // <-- force update
       this.value = '';
@@ -40,7 +40,7 @@ function TodoList() {
   return [
     $.input()
       .attr({ placeholder: 'Todo ...' })
-      .on('keydown', newTodo),
+      .on('<Enter>', newTodo), // key press shortcut
     $.p('My todo list'),
     $.ul(renderList) // <-- reactive callback
   ];

@@ -28,7 +28,7 @@ async function buildExample(obj) {
   return [
     $.div(obj.title)
       .attr({ class: 'title' })
-      .onclick(e => e.target.nextSibling.classList.toggle('hidden')),
+      .on('click', e => e.target.nextSibling.classList.toggle('hidden')),
     $.div(
       $.div(obj.els).attr({ class: 'live' }),
       $.pre($.code(js))
