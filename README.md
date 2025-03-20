@@ -351,7 +351,7 @@ All methods of this class return the current element to allow chaining.
 Set element attributes. If the attribute is a `ReactiveValue` performs 1-way data binding.
 
 **Parameters**:
-- value - Must be an object
+- attributes - Must be an object
 
 **Normal usage**:
 ```js
@@ -407,17 +407,17 @@ Wrapper for [addEventListener](https://developer.mozilla.org/en-US/docs/Web/API/
 
 **Normal usage**:
 ```js
-$.button.on('click', ...)
+$.button().on('click', ...)
 ```
 
 **Extension: specific attribute**
 ```js
-$.input.on('keydown[key=Enter]', ...)
+$.input().on('keydown[key=Enter]', ...)
 ```
 
 **Extension: specific keydown**
 ```js
-$.input.on('<Enter>', ...)
+$.input().on('<Enter>', ...)
 ```
 
 ## <a name='ReactiveValue'></a>ReactiveValue
