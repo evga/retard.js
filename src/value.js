@@ -26,11 +26,9 @@ export class ReactiveValue {
     }
   }
 
-  #capture() {
-    const callback = stack.current;
-
-    if (callback && !this.callbacks.has(callback)) {
-      this.callbacks.add(callback);
+  capture() {
+    if (stack.current) {
+      this.callbacks.add(stack.current);
     }
   }
 
@@ -44,7 +42,7 @@ export class ReactiveValue {
       this.readStats.counter();
     }
 
-    this.#capture();
+    this.capture();
     return this.value;
   }
 
@@ -69,7 +67,8 @@ export class ReactiveValue {
     const toRemove = [];
 
     for (const cb of this.callbacks) {
-      if (cb.execute() === StopSymbol) toRemove.push(cb);
+      if (cb.execute() === StopSymbol) 
+        toRemove.push(cb);
     }
 
     for (const cb of toRemove) {
@@ -83,7 +82,7 @@ export class ReactiveValue {
   }
 
   toString() {
-    this.#capture();
+    this.capture();
     return String(this.value);
   }
 }
