@@ -1,32 +1,24 @@
-# RETARD.js - Reactivity for Dummies
+- [About](#about)
+- [Examples](#examples)
+- [Quickstart](#quickstart)
+- [Concepts](#concepts)
+  - [Reactivity](#reactivity)
+  - [Reactive Values](#reactive-values)
+  - [Reactive Elements](#reactive-elements)
+  - [Reactive Childs](#reactive-childs)
+  - [Reactive Attributes](#reactive-attributes)
+  - [Components](#components)
+- [ReactiveElement](#reactiveelement)
+  - [Method: attr(obj)](#method-attrobj)
+  - [Method: prop(obj)](#method-propobj)
+  - [Method: bind(value)](#method-bindvalue)
+  - [Method: on(eventName, listener, \[options\])](#method-oneventname-listener-options)
+- [ReactiveValue](#reactivevalue)
+- [ReactiveCallback](#reactivecallback)
+- [Performance](#performance)
 
-<!-- vscode-markdown-toc -->
-* [About](#About)
-* [Examples](#Examples)
-* [Quickstart](#Quickstart)
-* [Concepts](#Concepts)
-	* [Reactivity](#Reactivity)
-	* [Reactive Values](#ReactiveValues)
-	* [Reactive Elements](#ReactiveElements)
-	* [Reactive Childs](#ReactiveChilds)
-	* [Reactive Attributes](#ReactiveAttributes)
-	* [Components](#Components)
-* [ReactiveElement](#ReactiveElement)
-	* [Method: attr(obj)](#Method:attrobj)
-	* [Method: prop(obj)](#Method:propobj)
-	* [Method: bind(value)](#Method:bindvalue)
-	* [Method: on(eventName, listener, [options])](#Method:oneventNamelisteneroptions)
-* [ReactiveValue](#ReactiveValue)
-* [ReactiveCallback](#ReactiveCallback)
-* [Performance](#Performance)
 
-<!-- vscode-markdown-toc-config
-	numbering=false
-	autoSave=true
-	/vscode-markdown-toc-config -->
-<!-- /vscode-markdown-toc -->
-
-## <a name='About'></a>About
+## About
 
 RETARD.js is a small framework that:
 
@@ -39,7 +31,7 @@ RETARD.js is a small framework that:
 - Supports data binding
 - ...
 
-## <a name='Examples'></a>Examples
+## Examples
 
 There is a page with live examples and source code:
 
@@ -47,7 +39,7 @@ There is a page with live examples and source code:
 
 You can also check the `/docs/examples` folder.
 
-## <a name='Quickstart'></a>Quickstart
+## Quickstart
 
 RETARD.js is an ES6 Module:
 
@@ -96,7 +88,7 @@ If everything works you should see the hello message.
 > [!IMPORTANT]
 > Your editor might try to import from `./retard` instead of `./retard.js` - the `.js` extension is needed to make it work.
 
-## <a name='Concepts'></a>Concepts
+## Concepts
 
 These are the important functions you have to remember:
 
@@ -110,7 +102,7 @@ To make it easier to build the UI with the `newTag` function it will be renamed 
 import { newTag as $, newValue } from './retard.js'
 ```
 
-### <a name='Reactivity'></a>Reactivity
+### Reactivity
 
 Reactivity is implemented in the following way:
 
@@ -128,7 +120,7 @@ Reactivity is implemented in the following way:
   - 2-way data-bind with specific elements
   - ...
 
-### <a name='ReactiveValues'></a>Reactive Values
+### Reactive Values
 
 A reactive value is any value that is wrapped inside a `ReactiveValue` object.
 
@@ -172,7 +164,7 @@ age.changed()
 > [!CAUTION]
 > Using `v.write()` inside a reactive callback will create a massive black hole (also known as infinite loop). To avoid this, the library throws an exception if you try to do it.
 
-### <a name='ReactiveElements'></a>Reactive Elements
+### Reactive Elements
 
 A `ReactiveElement` object is a wrapper for the result of `document.createElement()`.
 
@@ -274,7 +266,7 @@ $(document.body)(myDiv) // OK
 $(document.body)(myDiv.element) // OK
 ```
 
-### <a name='ReactiveChilds'></a>Reactive Childs
+### Reactive Childs
 
 So far we've created a bunch of html elements using javascript but there is nothing special about it. Let's introduce the concept of reactive childs.
 
@@ -333,20 +325,20 @@ In this example:
 - changing `name` will:
   - change the content of the last div
 
-### <a name='ReactiveAttributes'></a>Reactive Attributes
+### Reactive Attributes
 
 TODO
 
-### <a name='Components'></a>Components
+### Components
 
 TODO
 
 
-## <a name='ReactiveElement'></a>ReactiveElement
+## ReactiveElement
 
 All methods of this class return the current element to allow chaining.
 
-### <a name='Method:attrobj'></a>Method: attr(obj)
+### Method: attr(obj)
 
 Set element attributes.
 
@@ -375,7 +367,7 @@ $.div('content').attr({
 dynamicStyle.write('color: green')
 ```
 
-### <a name='Method:propobj'></a>Method: prop(obj)
+### Method: prop(obj)
 
 Set element properties.
 
@@ -397,7 +389,7 @@ $.div().prop({ innerHTML: html })
 html.write('<b>xxx</b>')
 ```
 
-### <a name='Method:bindvalue'></a>Method: bind(value)
+### Method: bind(value)
 
 Perform 2-way data binding specific to each type of element.
 
@@ -418,7 +410,7 @@ const value = newValue('Timmy')
 $.input().bind(value)
 ```
 
-### <a name='Method:oneventNamelisteneroptions'></a>Method: on(eventName, listener, [options])
+### Method: on(eventName, listener, [options])
 
 Wrapper for [addEventListener](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener) with some additions.
 
@@ -441,11 +433,11 @@ $.input().on('keydown[key=Enter]', ...)
 $.input().on('<Enter>', ...)
 ```
 
-## <a name='ReactiveValue'></a>ReactiveValue
+## ReactiveValue
 
-## <a name='ReactiveCallback'></a>ReactiveCallback
+## ReactiveCallback
 
-## <a name='Performance'></a>Performance
+## Performance
 
 TODO: talk about the stats module
 
