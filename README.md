@@ -113,7 +113,7 @@ import { newTag as $, newValue } from './retard.js'
 
 Reactivity is implemented in the following way:
 
-- A `ReactiveValue` can capture the function that reads it
+- A `ReactiveValue` can capture the current function
   - this happens only if the function uses `v.read()` and ...
   - if the function is wrapped in a `ReactiveCallback`
 - The function will be called again if/when the value is updated
@@ -122,8 +122,9 @@ Reactivity is implemented in the following way:
 - A `ReactiveElement` allows:
   - functions to be defined as childs:
     - these functions are wrapped in a `ReactiveCallback`
-    - the child is automatically updated if/when the function's reactive values change
-  - binding a `ReactiveValue` to the element's attributes
+    - reactive childs are automatically re-created when needed
+  - 1-way data-bind of attributes
+  - 2-way data-bind with specific elements
   - ...
 
 > [!IMPORTANT]
