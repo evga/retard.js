@@ -1,4 +1,4 @@
-import { TAG } from "./retard.js";
+import { newTag as $ } from "./retard.js";
 import counter from "../examples/counter.js";
 import todolist from "../examples/todolist.js";
 
@@ -26,20 +26,19 @@ async function getSource(url) {
 async function buildExample(obj) {
   const js = await getSource(obj.url);
   return [
-    TAG
-      .div(obj.title)
+    $.div(obj.title)
       .attr({ class: 'title' })
       .onclick(e => e.target.nextSibling.classList.toggle('hidden')),
-    TAG.div(
-      TAG.div(obj.els).attr({ class: 'live' }),
-      TAG.pre(TAG.code(js))
+    $.div(
+      $.div(obj.els).attr({ class: 'live' }),
+      $.pre($.code(js))
     ).attr({ class: `example ${obj.els === devmode ? '' : 'hidden'}` })
   ];
 
 }
 
 async function buildPage() {
-  TAG("#app")(await Promise.all(examples.map(buildExample)));
+  $("#app")(await Promise.all(examples.map(buildExample)));
 }
 
 await buildPage();

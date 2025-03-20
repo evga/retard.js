@@ -1,4 +1,4 @@
-import { TAG, newValue } from "../scripts/retard.js";
+import { newTag as $, newValue } from "../scripts/retard.js";
 
 function TodoList() {
   const todos = newValue([
@@ -18,13 +18,13 @@ function TodoList() {
   function renderItemText(item) {
     const done = item.done.read(); // <-- capture the function
     const style = done ? 'text-decoration: line-through' : '';
-    return TAG.span(item.text).attr({ style: style });
+    return $.span(item.text).attr({ style: style });
   }
 
   function renderItem(item) {
-    return TAG.li(
-      TAG.label(
-        TAG.input_checkbox().bind(item.done), // <-- data binding
+    return $.li(
+      $.label(
+        $.input_checkbox().bind(item.done), // <-- data binding
         () => renderItemText(item) // <-- reactive callback
       )
     );
@@ -38,11 +38,11 @@ function TodoList() {
   }
 
   return [
-    TAG.input()
+    $.input()
       .attr({ placeholder: 'Todo ...' })
       .on('keydown', newTodo),
-    TAG.p('My todo list'),
-    TAG.ul(renderList) // <-- reactive callback
+    $.p('My todo list'),
+    $.ul(renderList) // <-- reactive callback
   ];
 }
 

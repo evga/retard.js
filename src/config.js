@@ -1,0 +1,3 @@
+export default {
+  enableStats: true
+}

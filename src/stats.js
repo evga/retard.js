@@ -1,10 +1,8 @@
-import { ReactiveCallback } from "./callback";
-import { ReactiveValue } from "./value";
+import { Aggregate } from "./util.js";
+import { callbacks } from "./callback.js";
+import { values } from "./value.js";
 
-export const stats = {
-  _enabled: true,
-  /** @type {ReactiveCallback[]} */ callbacks: [],
-  /** @type {ReactiveValue[]} */ values: [],
+/*export const stats = {
   tags: {},
   addTag: function (tagName) {
     if (stats.tags[tagName] === undefined) {
@@ -13,33 +11,9 @@ export const stats = {
     stats.tags[tagName].counter();
   }
   //elements: []
-};
+};*/
 
-export class Aggregate {
-  constructor() {
-    this.cnt = 0;
-    this.sum = 0;
-    this.vmin = null;
-    this.vmax = null;
-    this.avg = 0;
-  }
 
-  counter() {
-    this.cnt++;
-  }
-
-  update(v) {
-    this.cnt++;
-    this.sum += v;
-    this.vmin = this.vmin === null ? v : Math.min(v, this.vmin);
-    this.vmax = this.vmax === null ? v : Math.max(v, this.vmax);
-    this.avg = this.cnt > 0 ? this.sum / this.cnt : 0;
-  }
-
-  toString() {
-    return `cnt=${this.cnt} sum=${this.sum} min=${this.vmin} max=${this.vmax} avg=${this.avg}`;
-  }
-}
 
 function tag(tagName, attr) {
   const el = document.createElement(tagName);
@@ -106,21 +80,21 @@ export function report({ tags = true, details = false } = {}) {
   })(
     tline("metric", "cnt", "sum", "min", "max", "avg"),
     tags ? tsection(`Tags`) : "",
-    ...Object.entries(stats.tags).map(([k, v]) => [tags ? tline(k, v) : ""]),
-    tsection(`Values: ${stats.values.length}`),
-    ...stats.values.map((c) => [
+    //...Object.entries(stats.tags).map(([k, v]) => [tags ? tline(k, v) : ""]),
+    tsection(`Values: ${values.length}`),
+    ...values.map((c) => [
 
       tspan(`[${typeof c.value}] ${c.value}`), // careful here
       details ? tline("callbacks", c.callbacks.size) : "",
-      details ? tline("reads", c.stats_reads) : "",
-      details ? tline("writes", c.stats_writes) : "",
-      details ? tline("changes", c.stats_changes) : ""
+      details ? tline("reads", c.readStats) : "",
+      details ? tline("writes", c.writeStats) : "",
+      details ? tline("changes", c.changedStats) : ""
     ]),
-    tsection(`Callbacks: ${stats.callbacks.length}`),
-    ...stats.callbacks.map((c) => [
+    tsection(`Callbacks: ${callbacks.length}`),
+    ...callbacks.map((c) => [
       tspan(callbackDesc(c)),
-      details ? tline(`stopped=${c.stopped}`) : "",
-      details ? tline("execute", c.stats_execute) : ""
+      //details ? tline(`stopped=${c.stopped}`) : "",
+      details ? tline("execute", c.executeStats) : ""
     ])
   );
 }

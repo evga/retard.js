@@ -48,7 +48,7 @@ You can also check the `/docs/examples` folder.
 
 RETARD.js is an ES6 Module:
 
-- you NEED to use a script with `type="module"`
+- you HAVE to use a script with `type="module"`
 - you NEED a web server
 
 > [!CAUTION]
@@ -81,9 +81,9 @@ Put this inside `index.html`
 Put this inside `app.js`
 
 ```js
-import { TAG } from './retard.js'
+import { newTag, newValue } from './retard.js'
 
-TAG('#app')(
+newTag('#app')(
   'Hello from RETARD.js'
 )
 ```
@@ -95,11 +95,17 @@ If everything works you should see the hello message.
 
 ## <a name='Concepts'></a>Concepts
 
-These are the most important functions you have to understand:
+These are the important functions you have to remember:
 
-- `TAG` - Used to create one or more `ReactiveElement`
+- `newTag` - Used to create a `ReactiveElement`
 - `newValue` - Used to create a `ReactiveValue`
 - `newCallback` - Used to create a `ReactiveCallback`
+
+To make it easier to build the UI with the `newTag` function it will be renamed to the `$` symbol like this:
+
+```js
+import { newTag as $, newValue } from './retard.js'
+```
 
 ### <a name='Reactivity'></a>Reactivity
 
@@ -166,25 +172,25 @@ age.changed()
 
 A `ReactiveElement` object is a wrapper for the `Element` object returned by the `document.createElement()` function.
 
-Use the `TAG` object to create a `ReactiveElement`:
+Use the `$` function to create a `ReactiveElement`:
 
 ```js
 // Create new elements
 
-TAG('div')  // function call syntax
-TAG.div     // property syntax
+$('div')  // function call syntax
+$.div     // property syntax
 
 // Attach to existing elements
 
-TAG(document.body) // using the element directly
-TAG('#app')        // using the element ID
+$(document.body) // using the element directly
+$('#app')        // using the element ID
 ```
 
-The basic syntax for the tag object is:
+The basic syntax for the `$` function is:
 
 ```js
-TAG(tagName)(...childs) // or
-TAG.tagName(...childs)
+$('tagName')(...childs) // or
+$.tagName(...childs)
 ```
 
 For example, to create the following html structure:
@@ -200,39 +206,28 @@ You have to write the following code:
 
 ```js
 // property syntax
-TAG.div(
-  TAG.input(),
-  TAG.button('Click me!')
-)
-
-// function syntax
-TAG('div')(
-  TAG('input')(),
-  TAG('button')('Click me!')
-)
-```
-I personally prefer the property syntax so I'm gonna use it for the rest of this document.
-
-> [!NOTE]
-> Most javascript libraries that allow the creation of elements with pure code use many parameters inside a single function call, like `newTag('div', {attr: value}, [child1, child2, ...])` - this quickly becomes a nightmare to maintain since there are too many nested parenthesis eventually.
-
-> [!TIP]
-> You can rename the `TAG` object when you import it!
-```js
-import { TAG as $ } from './retard.js'
-
 $.div(
   $.input(),
   $.button('Click me!')
 )
+
+// function syntax
+$('div')(
+  $('input')(),
+  $('button')('Click me!')
+)
 ```
+
+> [!NOTE]
+> Most javascript libraries that allow the creation of elements with pure code use many parameters inside a single function call, like `newTag('div', {attr: value}, [child1, child2, ...])` - this quickly becomes a nightmare to maintain since there are too many nested parenthesis eventually.
+
 Once you have a `ReactiveElement` you can enhance it with additional attributes and events:
 
 - use `.on()` to attach event handlers
 - use `.attr()` to change the element's attributes
 - etc...
 
-These are all the methods of `ReactiveElement` and they return the same object so you can chain them (similar to jQuery).
+These are methods of `ReactiveElement` and they return the same object so you can chain them (similar to jQuery).
 
 For example if you have this html:
 ```html
@@ -252,13 +247,9 @@ For example if you have this html:
 This is the equivalent code in RETARD.js:
 
 ```js
-TAG.form(
-  TAG
-    .input()
-    .attr({ type: 'text', name: 'name' }),
-  TAG
-    .button('Submit')
-    .attr({ type: 'submit' }),
+$.form(
+  $.input().attr({ type: 'text', name: 'name' }),
+  $.button('Submit').attr({ type: 'submit' }),
 )
 .attr({ class: 'myForm' })
 .on('click', function(e) {
@@ -269,23 +260,16 @@ TAG.form(
 
 If you have a `ReactiveElement` and you need to append it inside another DOM node you will have to get a reference to the wrapped object first using the  `.element` property.
 
-This operation happens automatically for elements defined as childs of `TAG` objects.
+This operation is automatic for childs of `ReactiveElement`.
 
 ```js
-// this is a ReactiveElement
-const myDiv = TAG.div() 
+const myDiv = $.div() // a ReactiveElement
 
-// this is WRONG
-document.body.append(myDiv) 
+document.body.append(myDiv) // WRONG
+document.body.append(myDiv.element) // OK
 
-// this is OK
-document.body.append(myDiv.element)
-
-// this is also OK
-TAG(document.body)(myDiv)
-
-// this is also OK
-TAG(document.body)(myDiv.element)
+$(document.body)(myDiv) // OK
+$(document.body)(myDiv.element) // OK
 ```
 
 ### <a name='ReactiveChilds'></a>Reactive Childs
@@ -297,7 +281,7 @@ Look at this piece of code:
 ```js
 let name = 'Timmy'
 
-TAG('#app')(
+$('#app')(
   `Hello from ${name}`
 )
 
@@ -310,7 +294,7 @@ Now look at this:
 ```js
 const name = newValue('Timmy')
 
-TAG('#app')(
+$('#app')(
   () => `Hello from ${name.read()}`
 )
 
@@ -330,13 +314,13 @@ This will print `Hello from Jimmy` - this is a reactive child:
 Reactive childs can be nested and you can have many of them, mixed with normal text childs or non-reactive childs:
 
 ```js
-TAG('#app')(
+$('#app')(
   'a text node',
-  TAG.div('hello'), // non reactive child
-  TAG.div(() => `${greeting}`), // reactive version
+  $.div('hello'), // non reactive child
+  $.div(() => `${greeting}`), // reactive version
   () => [ // a reactive child returning two elements
     `${greeting}`,
-    TAG.div(() => `${name}`) // nested function
+    $.div(() => `${name}`) // nested function
   ]
 )
 ```

@@ -1,46 +1,21 @@
-import { ReactiveChild } from "./child.js";
 import { bindElement } from "./databind.js";
-import { stats } from "./stats.js";
 import { assert } from "./util.js";
+import { ReactiveContainer } from "./container.js";
 
 export class ReactiveElement {
   /**
-   *
    * @param {Element} element
    * @param {Array} childArray
    */
   constructor(element, childArray) {
     assert(element instanceof Element);
     assert(Array.isArray(childArray));
-
-    this.element = element;
-    this.childs = childArray.flat(Infinity);
-    //this.initialChildCount = element.childNodes.length;
-    //this.callbacks = [];
-
-    this.#init();
-
-    if (stats._enabled) {
-      stats.addTag(this.element.tagName);
-      //stats.elements.push(this);
-    }
+    
+    this.container = new ReactiveContainer(element, childArray);
   }
 
-  #init() {
-    for (let i = 0; i < this.childs.length; i++) {
-      const c = this.childs[i];
-      if (typeof c === "function") this.childs[i] = new ReactiveChild(this, c);
-    }
-
-    for (const c of this.childs) {
-      if (c instanceof ReactiveChild) {
-        c.callback.execute();
-      } else if (c instanceof ReactiveElement) {
-        this.element.append(c.element);
-      } else {
-        this.element.append(c);
-      }
-    }
+  get element() {
+    return this.container.element;
   }
 
   attr(obj) {
@@ -67,4 +42,27 @@ export class ReactiveElement {
     this.on("click", listener);
     return this;
   }
+}
+
+/**
+ * @param {string} tagName
+ * @param {object} [attributes]
+ */
+export function newElement(tagName, attributes) {
+  assert(typeof tagName === "string");
+  assert(tagName.length > 0);
+
+  return function (...childs) {
+    const el = document.createElement(tagName);
+    const result = new ReactiveElement(el, childs);
+    if (attributes) result.attr(attributes);
+    return result;
+  };
+}
+
+/**
+ * @param {Element} existingElement
+ */
+export function wrapElement(existingElement) {
+  return (...childs) => new ReactiveElement(existingElement, childs);
 }

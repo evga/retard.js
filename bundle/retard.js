@@ -3,30 +3,41 @@ function assert(condition, message) {
   throw new Error(message ?? "assert fail");
 }
 
+class Aggregate {
+  constructor() {
+    this.cnt = 0;
+    this.sum = 0;
+    this.vmin = null;
+    this.vmax = null;
+    this.avg = 0;
+  }
+
+  counter() {
+    this.cnt++;
+  }
+
+  update(v) {
+    this.cnt++;
+    this.sum += v;
+    this.vmin = this.vmin === null ? v : Math.min(v, this.vmin);
+    this.vmax = this.vmax === null ? v : Math.max(v, this.vmax);
+    this.avg = this.cnt > 0 ? this.sum / this.cnt : 0;
+  }
+}
+
 class ReactiveStack {
   #stack = [];
-  #balance = 0;
 
   constructor() { }
 
-  /**
-   *
-   * @param {ReactiveCallback} callback
-   */
-  push(callback) {
-    assert(callback instanceof ReactiveCallback);
-    this.#balance++;
-    this.#stack.push(callback);
+  push(item) {
+    this.#stack.push(item);
   }
 
-  /**
-   *
-   * @returns {ReactiveCallback}
-   */
   pop() {
-    assert(this.#balance - 1 >= 0, "unbalanced stack");
-
-    this.#balance--;
+    if(this.#stack.length === 0)
+      throw new Error('unbalanced stack');
+      
     return this.#stack.pop();
   }
 
@@ -34,15 +45,69 @@ class ReactiveStack {
     return this.#stack.length;
   }
 
-  /**
-   * @returns {ReactiveCallback}
-   */
   get current() {
     return this.#stack[this.#stack.length - 1];
   }
 }
 
 const stack = new ReactiveStack();
+
+var config = {
+  enableStats: true
+};
+
+const StopSymbol = Symbol("stop");
+
+/** @type {ReactiveCallback[]} */
+const callbacks = [];
+
+class ReactiveCallback {
+  #stopped = false;
+  description;
+  userCallback;
+
+  /**
+   * 
+   * @param {Function} callback 
+   */
+  constructor(callback) {
+    assert(callback instanceof Function);
+
+    this.callback = callback;
+
+    if (config.enableStats) {
+      this.executeStats = new Aggregate();
+      callbacks.push(this);
+    }
+  }
+
+  stop() {
+    this.#stopped = true;
+  }
+
+  execute(...args) {
+    const t0 = performance.now();
+
+    if (this.#stopped)
+      return StopSymbol;
+
+    stack.push(this);
+    try {
+      return this.callback(...args);
+    } finally {
+      stack.pop();
+      if (this.executeStats)
+        this.executeStats.update(performance.now() - t0);
+    }
+  }
+}
+
+function newCallback(callback) {
+  return new ReactiveCallback(callback);
+}
+
+/** @type {ReactiveValue[]} */
+const values = [];
 
 class ReactiveValue {
   /**
@@ -55,12 +120,12 @@ class ReactiveValue {
     this.callbacks = new Set();
     this.resetBound = this.reset.bind(this);
 
-    if (stats._enabled) {
-      this.stats_reads = new Aggregate();
-      this.stats_writes = new Aggregate();
-      this.stats_changes = new Aggregate();
+    if (config.enableStats) {
+      this.readStats = new Aggregate();
+      this.writeStats = new Aggregate();
+      this.changedStats = new Aggregate();
       // @ts-ignore
-      stats.values.push(this);
+      values.push(this);
     }
   }
 
@@ -78,8 +143,8 @@ class ReactiveValue {
   }
 
   read() {
-    if (this.stats_reads) {
-      this.stats_reads.counter();
+    if (this.readStats) {
+      this.readStats.counter();
     }
 
     this.#capture();
@@ -88,10 +153,10 @@ class ReactiveValue {
 
   write(newValue, { force = false } = {}) {
     if (stack.length > 0)
-      throw new Error("infinite loop");
+      throw new Error("write used inside a reactive callback");
 
-    if (this.stats_writes) {
-      this.stats_writes.counter();
+    if (this.writeStats) {
+      this.writeStats.counter();
     }
 
     if (this.value !== newValue || force) {
@@ -115,8 +180,8 @@ class ReactiveValue {
       console.log("removed callback", cb);
     }
 
-    if (this.stats_changes) {
-      this.stats_changes.update(performance.now() - t0);
+    if (this.changedStats) {
+      this.changedStats.update(performance.now() - t0);
     }
   }
 
@@ -126,304 +191,11 @@ class ReactiveValue {
   }
 }
 
-const stats = {
-  _enabled: true,
-  /** @type {ReactiveCallback[]} */ callbacks: [],
-  /** @type {ReactiveValue[]} */ values: [],
-  tags: {},
-  addTag: function (tagName) {
-    if (stats.tags[tagName] === undefined) {
-      stats.tags[tagName] = new Aggregate();
-    }
-    stats.tags[tagName].counter();
-  }
-  //elements: []
-};
-
-class Aggregate {
-  constructor() {
-    this.cnt = 0;
-    this.sum = 0;
-    this.vmin = null;
-    this.vmax = null;
-    this.avg = 0;
-  }
-
-  counter() {
-    this.cnt++;
-  }
-
-  update(v) {
-    this.cnt++;
-    this.sum += v;
-    this.vmin = this.vmin === null ? v : Math.min(v, this.vmin);
-    this.vmax = this.vmax === null ? v : Math.max(v, this.vmax);
-    this.avg = this.cnt > 0 ? this.sum / this.cnt : 0;
-  }
-
-  toString() {
-    return `cnt=${this.cnt} sum=${this.sum} min=${this.vmin} max=${this.vmax} avg=${this.avg}`;
-  }
-}
-
-function tag(tagName, attr) {
-  const el = document.createElement(tagName);
-  if (typeof attr === "object") {
-    for (const a in attr) el.setAttribute(a, attr[a]);
-  }
-
-  return function (...args) {
-    el.append(...args.flat(Infinity));
-    return el;
-  };
-}
-
-function tsection(desc) {
-  return tag("tr")(
-    tag("td", { colspan: "6", style: "background-color: #000; color: #fff" })(
-      desc ?? ""
-    )
-  );
-}
-
-function tspan(desc) {
-  return tag("tr", { style: "border-bottom: 1px solid #666" })(
-    tag("td", { colspan: "6", style: "background-color: #ccc" })(desc ?? "")
-  );
-}
-
-function tline(desc, cnt, sum, min, max, avg) {
-  if (cnt instanceof Aggregate) {
-    const a = cnt;
-    cnt = a.cnt;
-    sum = a.sum;
-    min = a.vmin;
-    max = a.vmax;
-    avg = a.avg.toFixed(1);
-  }
-  const style1 = "background-color: #999999; color: #000";
-  const style2 = "text-align: center; background-color: #cccc66";
-  const style3 = "text-align: center; background-color: #6666cc";
-  return tag("tr")(
-    tag("td", { style: style1 })(desc ?? ""),
-    tag("td", { style: style2 })(cnt ?? ""),
-    tag("td", { style: style3 })(sum ?? ""),
-    tag("td", { style: style3 })(min ?? ""),
-    tag("td", { style: style3 })(max ?? ""),
-    tag("td", { style: style3 })(avg ?? "")
-  );
-}
-
-function callbackDesc(c) {
-  if (c.description) {
-    if (typeof c.description === "function") return c.description();
-    else return c.description;
-  } else if (c.userCallback) {
-    return String(c.userCallback);
-  } else {
-    return String(c.callback);
-  }
-}
-
-function report({ tags = true, details = false } = {}) {
-  return tag("table", {
-    style: "border-collapse: collapse; font-size: 12px; width: 100%"
-  })(
-    tline("metric", "cnt", "sum", "min", "max", "avg"),
-    tags ? tsection(`Tags`) : "",
-    ...Object.entries(stats.tags).map(([k, v]) => [tags ? tline(k, v) : ""]),
-    tsection(`Values: ${stats.values.length}`),
-    ...stats.values.map((c) => [
-
-      tspan(`[${typeof c.value}] ${c.value}`), // careful here
-      details ? tline("callbacks", c.callbacks.size) : "",
-      details ? tline("reads", c.stats_reads) : "",
-      details ? tline("writes", c.stats_writes) : "",
-      details ? tline("changes", c.stats_changes) : ""
-    ]),
-    tsection(`Callbacks: ${stats.callbacks.length}`),
-    ...stats.callbacks.map((c) => [
-      tspan(callbackDesc(c)),
-      details ? tline(`stopped=${c.stopped}`) : "",
-      details ? tline("execute", c.stats_execute) : ""
-    ])
-  );
-}
-
-const StopSymbol = Symbol("stop");
-
-class ReactiveCallback {
-  /**
-   *
-   * @param {Function} callback
-   */
-  constructor(callback) {
-    assert(callback instanceof Function);
-
-    this.callback = callback;
-    this.description = null;
-    this.userCallback = null;
-    this.stopped = false;
-
-    if (stats._enabled) {
-      this.stats_execute = new Aggregate();
-      // @ts-ignore
-      stats.callbacks.push(this);
-    }
-  }
-
-  stop() {
-    this.stopped = true;
-  }
-
-  execute(...args) {
-    const t0 = performance.now();
-
-    if (this.stopped) return StopSymbol;
-
-    stack.push(this);
-    try {
-      return this.callback(...args);
-    } finally {
-      stack.pop();
-      if (this.stats_execute) this.stats_execute.update(performance.now() - t0);
-    }
-  }
-}
-
-class ReactiveChild {
-  /**
-   *
-   * @param {ReactiveElement} re
-   * @param {Function} fn
-   */
-  constructor(re, fn) {
-    assert(re instanceof ReactiveElement);
-    assert(typeof fn === "function");
-
-    this.re = re;
-    this.fn = fn;
-    this.initialChildCount = re.element.childNodes.length;
-    this.firstInvocation = true;
-    this.clen = 0;
-    this.callback = new ReactiveCallback(() => this.#swap());
-    this.callback.userCallback = fn;
-    //this.callback.execute();
-  }
-
-  #check() {
-    const el_clen = this.re.element.childNodes.length;
-    const tpl_clen = this.re.childs.reduce(
-      (sum, item) => sum + (item instanceof ReactiveChild ? item.clen : 1),
-      this.initialChildCount
-    );
-
-    if (el_clen !== tpl_clen)
-      throw new Error(`desync ${el_clen} vs ${tpl_clen}`);
-  }
-
-  #insertionPoint() {
-    let node = this.re.element.firstChild;
-    if (node === null) return null;
-
-    let skip = this.initialChildCount;
-
-    while (skip--) {
-      if (node === null) throw new Error("child expected");
-
-      node = node.nextSibling;
-    }
-
-    skip = 0;
-
-    for (const c of this.re.childs) {
-      if (c === this) {
-        while (skip--) {
-          if (node === null) throw new Error("child expected");
-
-          node = node.nextSibling;
-        }
-        return node;
-      }
-      skip += typeof c === "function" ? c.clen : 1;
-    }
-
-    throw new Error("function not found");
-  }
-
-  #swap() {
-    assert(this instanceof ReactiveChild);
-
-    if (!this.firstInvocation) this.#check();
-
-    //if (!firstInvocation && !self.element.isConnected)
-
-    let removeCnt = this.clen;
-
-    const fnChilds = [this.fn(/* pass something useful here???*/)].flat(
-      Infinity
-    );
-    this.clen = fnChilds.length;
-
-    for (let i = 0; i < fnChilds.length; i++) {
-      if (fnChilds[i] instanceof ReactiveElement)
-        fnChilds[i] = fnChilds[i].element;
-    }
-
-    if (this.firstInvocation) {
-      this.firstInvocation = false;
-
-      // the tag is being built for the first time
-      // so just append the childs in a simple way
-      // without doing anything special
-      if (fnChilds.length > 0) {
-        this.re.element.append(...fnChilds);
-      }
-    } else {
-      let node = this.#insertionPoint();
-
-      if (node === null) {
-        this.re.element.append(...fnChilds);
-      } else {
-        // TODO
-        // improve replacement...
-        // instead of replace+append
-        // do something like... if newlen >= oldlen
-        // replace node up to oldlen
-        // ...... think bout it !!!
-
-        while (removeCnt--) {
-          if (node === null) throw new Error("child expected");
-
-          const tmp = node;
-
-          node = node.nextSibling;
-
-          if (tmp.parentNode === null) throw new Error("parentNode is null");
-
-          tmp.parentNode.removeChild(tmp);
-        }
-
-        if (fnChilds.length > 0) {
-          if (node === null) {
-            this.re.element.append(...fnChilds);
-          } else {
-            if (node.parentNode === null) throw new Error("parentNode is null");
-
-            for (const c of fnChilds) {
-              if (c instanceof Node) node.parentNode.insertBefore(c, node);
-              else
-                node.parentNode.insertBefore(document.createTextNode(c), node);
-            }
-          }
-        }
-      }
-    }
-  }
+function newValue(initialValue) {
+  return new ReactiveValue(initialValue);
 }
 
 /**
- *
  * @param {HTMLInputElement} el
  * @param {ReactiveValue} rv
  */
@@ -448,7 +220,6 @@ function bindInputElement(el, rv) {
 }
 
 /**
- *
  * @param {HTMLSelectElement} el
  * @param {ReactiveValue} rv
  */
@@ -469,8 +240,6 @@ function bindSelectElement(el, rv) {
 }
 
 /**
- * 2way databind
- *
  * @param {Element} el
  * @param {ReactiveValue} rv
  */
@@ -478,17 +247,33 @@ function bindElement(el, rv) {
   assert(el instanceof Element);
   assert(rv instanceof ReactiveValue);
 
-  if (el instanceof HTMLInputElement) {
-    bindInputElement(el, rv);
-  } else if (el instanceof HTMLSelectElement) {
-    bindSelectElement(el, rv);
-  }
+  if (el instanceof HTMLInputElement) bindInputElement(el, rv);
+  else if (el instanceof HTMLSelectElement) bindSelectElement(el, rv);
 }
 
-class ReactiveElement {
+/*
+
+TAG(
+  'a', 
+  () => TAG( () => 'b' ), 
+  'c'
+)
+
+ReactiveElement
+  > ReactiveContainer
+    > 'a'
+    > ReactiveChild
+      > ReactiveElement
+        > ReactiveContainer
+          > 'b'
+    > 'c'
+
+*/
+
+class ReactiveContainer {
   /**
-   *
-   * @param {Element} element
+   * 
+   * @param {Element} element 
    * @param {Array} childArray
    */
   constructor(element, childArray) {
@@ -496,33 +281,160 @@ class ReactiveElement {
     assert(Array.isArray(childArray));
 
     this.element = element;
-    this.childs = childArray.flat(Infinity);
-    //this.initialChildCount = element.childNodes.length;
-    //this.callbacks = [];
+    this.initialChildCount = element.childNodes.length;
+
+    this.childs = childArray
+      .flat(Infinity)
+      .map(c => (typeof c === 'function' ? new ReactiveChild(this, c) : c));
 
     this.#init();
-
-    if (stats._enabled) {
-      stats.addTag(this.element.tagName);
-      //stats.elements.push(this);
-    }
   }
 
   #init() {
-    for (let i = 0; i < this.childs.length; i++) {
-      const c = this.childs[i];
-      if (typeof c === "function") this.childs[i] = new ReactiveChild(this, c);
-    }
-
     for (const c of this.childs) {
       if (c instanceof ReactiveChild) {
         c.callback.execute();
-      } else if (c instanceof ReactiveElement) {
-        this.element.append(c.element);
+      } else if (c && c.container instanceof ReactiveContainer) {
+        this.element.append(c.container.element);
       } else {
         this.element.append(c);
       }
     }
+
+    this.check();
+  }
+
+  #renderedChildCount() {
+    const cb = (prev, cur) => prev + (cur instanceof ReactiveChild ? cur.clen : 1);
+    return this.childs.reduce(cb, this.initialChildCount);
+  }
+
+  check() {
+    const currentChildCount = this.element.childNodes.length;
+    const renderedChildCount = this.#renderedChildCount();
+
+    if (currentChildCount !== renderedChildCount)
+      throw new Error(`element desync current=${currentChildCount} render=${renderedChildCount}`);
+  }
+}
+
+class ReactiveChild {
+
+  /**
+   * @param {ReactiveContainer} container 
+   * @param {Function} userCallback 
+   */
+  constructor(container, userCallback) {
+    this.container = container;
+    this.userCallback = userCallback;
+    this.firstInvocation = true;
+    this.clen = 0;
+    this.callback = new ReactiveCallback(() => this.#swap());
+    this.callback.userCallback = userCallback;
+  }
+
+  #insertionPoint() {
+    let node = this.container.element.firstChild;
+    if (node === null) return null;
+
+    let skip = this.container.initialChildCount;
+
+    while (skip--) {
+      if (node === null) throw new Error("child expected");
+      node = node.nextSibling;
+    }
+
+    skip = 0;
+
+    for (const c of this.container.childs) {
+      if (c === this) {
+        while (skip--) {
+          if (node === null) throw new Error("child expected");
+          node = node.nextSibling;
+        }
+        return node;
+      }
+      skip += (typeof c === "function") ? c.clen : 1;
+    }
+
+    throw new Error("function not found");
+  }
+
+  #swap() {
+    assert(this instanceof ReactiveChild);
+
+    if (!this.firstInvocation)
+      this.container.check();
+
+    //if (!firstInvocation && !self.element.isConnected)
+
+    let removeCnt = this.clen;
+
+    const fnChilds = [this.userCallback(/* ??? */)].flat(Infinity);
+    this.clen = fnChilds.length;
+
+    for (let i = 0; i < fnChilds.length; i++) {
+      if (fnChilds[i] && fnChilds[i].container instanceof ReactiveContainer)
+        fnChilds[i] = fnChilds[i].container.element;
+    }
+
+    if (this.firstInvocation) {
+      this.firstInvocation = false;
+      if (fnChilds.length > 0) {
+        this.container.element.append(...fnChilds);
+      }
+    } else {
+      let node = this.#insertionPoint();
+
+      if (node === null) {
+        this.container.element.append(...fnChilds);
+      } else {
+        while (removeCnt--) {
+          if (node === null) throw new Error("child expected");
+
+          const tmp = node;
+
+          node = node.nextSibling;
+
+          if (tmp.parentNode === null) throw new Error("parentNode is null");
+
+          tmp.parentNode.removeChild(tmp);
+        }
+
+        if (fnChilds.length > 0) {
+          if (node === null) {
+            this.container.element.append(...fnChilds);
+          } else {
+            if (node.parentNode === null) 
+              throw new Error("parentNode is null");
+
+            for (const c of fnChilds) {
+              if (c instanceof Node) 
+                node.parentNode.insertBefore(c, node);
+              else
+                node.parentNode.insertBefore(document.createTextNode(c), node);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+class ReactiveElement {
+  /**
+   * @param {Element} element
+   * @param {Array} childArray
+   */
+  constructor(element, childArray) {
+    assert(element instanceof Element);
+    assert(Array.isArray(childArray));
+    
+    this.container = new ReactiveContainer(element, childArray);
+  }
+
+  get element() {
+    return this.container.element;
   }
 
   attr(obj) {
@@ -552,28 +464,8 @@ class ReactiveElement {
 }
 
 /**
- *
- * @param {*} initialValue
- * @returns
- */
-function newValue(initialValue) {
-  return new ReactiveValue(initialValue);
-}
-
-/**
- *
- * @param {Function} callback
- * @returns
- */
-function newCallback(callback) {
-  return new ReactiveCallback(callback);
-}
-
-/**
- *
  * @param {string} tagName
  * @param {object} [attributes]
- * @returns
  */
 function newElement(tagName, attributes) {
   assert(typeof tagName === "string");
@@ -588,25 +480,17 @@ function newElement(tagName, attributes) {
 }
 
 /**
- *
  * @param {Element} existingElement
- * @returns
  */
 function wrapElement(existingElement) {
   return (...childs) => new ReactiveElement(existingElement, childs);
 }
 
 /**
- * To create a new element:
- *      TAG('div')
- *
- * To wrap an existing element:
- *      TAG(document.body)
- *      TAG('#app') [uses getElementById]
  * @param {string | Element} arg0
  * @returns {(...childs) => ReactiveElement}
  */
-const TAG = function (arg0) {
+function newTag(arg0) {
   if (typeof arg0 === "string") {
     if (arg0.startsWith("#")) {
       const el = document.getElementById(arg0.slice(1));
@@ -628,166 +512,166 @@ const TAG = function (arg0) {
 //
 
 // [A]
-TAG.a = newElement("a");
-TAG.abbr = newElement("abbr");
-TAG.address = newElement("address");
-TAG.area = newElement("area");
-TAG.article = newElement("article");
-TAG.aside = newElement("aside");
-TAG.audio = newElement("audio");
+newTag.a = newElement("a");
+newTag.abbr = newElement("abbr");
+newTag.address = newElement("address");
+newTag.area = newElement("area");
+newTag.article = newElement("article");
+newTag.aside = newElement("aside");
+newTag.audio = newElement("audio");
 // [B]
-TAG.b = newElement("b");
-TAG.base = newElement("base");
-TAG.bdi = newElement("bdi");
-TAG.bdo = newElement("bdo");
-TAG.blockquote = newElement("blockquote");
-TAG.body = newElement("body");
-TAG.br = newElement("br");
-TAG.button = newElement("button");
+newTag.b = newElement("b");
+newTag.base = newElement("base");
+newTag.bdi = newElement("bdi");
+newTag.bdo = newElement("bdo");
+newTag.blockquote = newElement("blockquote");
+newTag.body = newElement("body");
+newTag.br = newElement("br");
+newTag.button = newElement("button");
 // [C]
-TAG.canvas = newElement("canvas");
-TAG.caption = newElement("caption");
-TAG.cite = newElement("cite");
-TAG.code = newElement("code");
-TAG.col = newElement("col");
-TAG.colgroup = newElement("colgroup");
+newTag.canvas = newElement("canvas");
+newTag.caption = newElement("caption");
+newTag.cite = newElement("cite");
+newTag.code = newElement("code");
+newTag.col = newElement("col");
+newTag.colgroup = newElement("colgroup");
 // [D]
-TAG.data = newElement("data");
-TAG.datalist = newElement("datalist");
-TAG.dd = newElement("dd");
-TAG.del = newElement("del");
-TAG.details = newElement("details");
-TAG.dfn = newElement("dfn");
-TAG.dialog = newElement("dialog");
-TAG.div = newElement("div");
-TAG.dl = newElement("dl");
-TAG.dt = newElement("dt");
+newTag.data = newElement("data");
+newTag.datalist = newElement("datalist");
+newTag.dd = newElement("dd");
+newTag.del = newElement("del");
+newTag.details = newElement("details");
+newTag.dfn = newElement("dfn");
+newTag.dialog = newElement("dialog");
+newTag.div = newElement("div");
+newTag.dl = newElement("dl");
+newTag.dt = newElement("dt");
 // [E]
-TAG.em = newElement("em");
-TAG.embed = newElement("embed");
+newTag.em = newElement("em");
+newTag.embed = newElement("embed");
 // [F]
-TAG.fieldset = newElement("fieldset");
-TAG.figcaption = newElement("figcaption");
-TAG.figure = newElement("figure");
-TAG.footer = newElement("footer");
-TAG.form = newElement("form");
+newTag.fieldset = newElement("fieldset");
+newTag.figcaption = newElement("figcaption");
+newTag.figure = newElement("figure");
+newTag.footer = newElement("footer");
+newTag.form = newElement("form");
 // [H]
-TAG.h1 = newElement("h1");
-TAG.h2 = newElement("h2");
-TAG.h3 = newElement("h3");
-TAG.h4 = newElement("h4");
-TAG.h5 = newElement("h5");
-TAG.h6 = newElement("h6");
-TAG.head = newElement("head");
-TAG.header = newElement("header");
-TAG.hgroup = newElement("hgroup");
-TAG.hr = newElement("hr");
-TAG.html = newElement("html");
+newTag.h1 = newElement("h1");
+newTag.h2 = newElement("h2");
+newTag.h3 = newElement("h3");
+newTag.h4 = newElement("h4");
+newTag.h5 = newElement("h5");
+newTag.h6 = newElement("h6");
+newTag.head = newElement("head");
+newTag.header = newElement("header");
+newTag.hgroup = newElement("hgroup");
+newTag.hr = newElement("hr");
+newTag.html = newElement("html");
 // [I]
-TAG.i = newElement("i");
-TAG.iframe = newElement("iframe");
-TAG.img = newElement("img");
-TAG.input = newElement("input");
-TAG.ins = newElement("ins");
+newTag.i = newElement("i");
+newTag.iframe = newElement("iframe");
+newTag.img = newElement("img");
+newTag.input = newElement("input");
+newTag.ins = newElement("ins");
 // [K]
-TAG.kbd = newElement("kbd");
+newTag.kbd = newElement("kbd");
 // [L]
-TAG.label = newElement("label");
-TAG.legend = newElement("legend");
-TAG.li = newElement("li");
-TAG.link = newElement("link");
+newTag.label = newElement("label");
+newTag.legend = newElement("legend");
+newTag.li = newElement("li");
+newTag.link = newElement("link");
 // [M]
-TAG.main = newElement("main");
-TAG.map = newElement("map");
-TAG.mark = newElement("mark");
-TAG.math = newElement("math");
-TAG.menu = newElement("menu");
-TAG.meta = newElement("meta");
-TAG.meter = newElement("meter");
+newTag.main = newElement("main");
+newTag.map = newElement("map");
+newTag.mark = newElement("mark");
+newTag.math = newElement("math");
+newTag.menu = newElement("menu");
+newTag.meta = newElement("meta");
+newTag.meter = newElement("meter");
 // [N]
-TAG.nav = newElement("nav");
-TAG.noscript = newElement("noscript");
+newTag.nav = newElement("nav");
+newTag.noscript = newElement("noscript");
 // [O]
-TAG.object = newElement("object");
-TAG.ol = newElement("ol");
-TAG.optgroup = newElement("optgroup");
-TAG.option = newElement("option");
-TAG.output = newElement("output");
+newTag.object = newElement("object");
+newTag.ol = newElement("ol");
+newTag.optgroup = newElement("optgroup");
+newTag.option = newElement("option");
+newTag.output = newElement("output");
 // [P]
-TAG.p = newElement("p");
-TAG.picture = newElement("picture");
-TAG.pre = newElement("pre");
-TAG.progress = newElement("progress");
+newTag.p = newElement("p");
+newTag.picture = newElement("picture");
+newTag.pre = newElement("pre");
+newTag.progress = newElement("progress");
 // [Q]
-TAG.q = newElement("q");
+newTag.q = newElement("q");
 // [R]
-TAG.rp = newElement("rp");
-TAG.rt = newElement("rt");
-TAG.ruby = newElement("ruby");
+newTag.rp = newElement("rp");
+newTag.rt = newElement("rt");
+newTag.ruby = newElement("ruby");
 // [S]
-TAG.s = newElement("s");
-TAG.samp = newElement("samp");
-TAG.script = newElement("script");
-TAG.search = newElement("search");
-TAG.section = newElement("section");
-TAG.select = newElement("select");
-TAG.slot = newElement("slot");
-TAG.small = newElement("small");
-TAG.source = newElement("source");
-TAG.span = newElement("span");
-TAG.strong = newElement("strong");
-TAG.style = newElement("style");
-TAG.sub = newElement("sub");
-TAG.summary = newElement("summary");
-TAG.sup = newElement("sup");
-TAG.svg = newElement("svg");
+newTag.s = newElement("s");
+newTag.samp = newElement("samp");
+newTag.script = newElement("script");
+newTag.search = newElement("search");
+newTag.section = newElement("section");
+newTag.select = newElement("select");
+newTag.slot = newElement("slot");
+newTag.small = newElement("small");
+newTag.source = newElement("source");
+newTag.span = newElement("span");
+newTag.strong = newElement("strong");
+newTag.style = newElement("style");
+newTag.sub = newElement("sub");
+newTag.summary = newElement("summary");
+newTag.sup = newElement("sup");
+newTag.svg = newElement("svg");
 // [T]
-TAG.table = newElement("table");
-TAG.tbody = newElement("tbody");
-TAG.td = newElement("td");
-TAG.template = newElement("template");
-TAG.textarea = newElement("textarea");
-TAG.tfoot = newElement("tfoot");
-TAG.th = newElement("th");
-TAG.thead = newElement("thead");
-TAG.time = newElement("time");
-TAG.title = newElement("title");
-TAG.tr = newElement("tr");
-TAG.track = newElement("track");
+newTag.table = newElement("table");
+newTag.tbody = newElement("tbody");
+newTag.td = newElement("td");
+newTag.template = newElement("template");
+newTag.textarea = newElement("textarea");
+newTag.tfoot = newElement("tfoot");
+newTag.th = newElement("th");
+newTag.thead = newElement("thead");
+newTag.time = newElement("time");
+newTag.title = newElement("title");
+newTag.tr = newElement("tr");
+newTag.track = newElement("track");
 // [U]
-TAG.u = newElement("u");
-TAG.ul = newElement("ul");
+newTag.u = newElement("u");
+newTag.ul = newElement("ul");
 // [V]
-TAG.var = newElement("var");
-TAG.video = newElement("video");
+newTag.var = newElement("var");
+newTag.video = newElement("video");
 // [W]
-TAG.wbr = newElement("wbr");
+newTag.wbr = newElement("wbr");
 
 //
 // Shortcuts
 //
-TAG.input_hidden = newElement("input", { type: "hidden" });
-TAG.input_text = newElement("input", { type: "text" });
-TAG.input_search = newElement("input", { type: "search" });
-TAG.input_tel = newElement("input", { type: "tel" });
-TAG.input_url = newElement("input", { type: "url" });
-TAG.input_email = newElement("input", { type: "email" });
-TAG.input_password = newElement("input", { type: "password" });
-TAG.input_date = newElement("input", { type: "date" });
-TAG.input_month = newElement("input", { type: "month" });
-TAG.input_week = newElement("input", { type: "week" });
-TAG.input_time = newElement("input", { type: "time" });
-TAG.input_datetime_local = newElement("input", { type: "datetime-local" });
-TAG.input_number = newElement("input", { type: "number" });
-TAG.input_range = newElement("input", { type: "range" });
-TAG.input_color = newElement("input", { type: "color" });
-TAG.input_checkbox = newElement("input", { type: "checkbox" });
-TAG.input_radio = newElement("input", { type: "radio" });
-TAG.input_file = newElement("input", { type: "file" });
-TAG.input_submit = newElement("input", { type: "submit" });
-TAG.input_image = newElement("input", { type: "image" });
-TAG.input_reset = newElement("input", { type: "reset" });
-TAG.input_button = newElement("input", { type: "button" });
+newTag.input_hidden = newElement("input", { type: "hidden" });
+newTag.input_text = newElement("input", { type: "text" });
+newTag.input_search = newElement("input", { type: "search" });
+newTag.input_tel = newElement("input", { type: "tel" });
+newTag.input_url = newElement("input", { type: "url" });
+newTag.input_email = newElement("input", { type: "email" });
+newTag.input_password = newElement("input", { type: "password" });
+newTag.input_date = newElement("input", { type: "date" });
+newTag.input_month = newElement("input", { type: "month" });
+newTag.input_week = newElement("input", { type: "week" });
+newTag.input_time = newElement("input", { type: "time" });
+newTag.input_datetime_local = newElement("input", { type: "datetime-local" });
+newTag.input_number = newElement("input", { type: "number" });
+newTag.input_range = newElement("input", { type: "range" });
+newTag.input_color = newElement("input", { type: "color" });
+newTag.input_checkbox = newElement("input", { type: "checkbox" });
+newTag.input_radio = newElement("input", { type: "radio" });
+newTag.input_file = newElement("input", { type: "file" });
+newTag.input_submit = newElement("input", { type: "submit" });
+newTag.input_image = newElement("input", { type: "image" });
+newTag.input_reset = newElement("input", { type: "reset" });
+newTag.input_button = newElement("input", { type: "button" });
 
 //
 // Helper functions
@@ -795,18 +679,16 @@ TAG.input_button = newElement("input", { type: "button" });
 
 /**
  *
- * @param {ReactiveValue} rv
+ * @param {ReactiveValue | boolean} arg0
  */
-TAG.IF = function (rv) {
-  assert(rv instanceof ReactiveValue);
-
-  return function (...childs) {
-    return () => (rv.read() ? childs : []);
-  };
+newTag.IF = function (arg0) {
+  if (arg0 instanceof ReactiveValue) {
+    return (...childs) => (() => arg0.read() ? childs : []);
+  } else {
+    return (...childs) => (arg0 ? childs : []);
+  }
 };
 
-TAG.IF_static = function (condition) {
-  return (...args) => (condition ? args : []);
-};
+// Public API
 
-export { TAG, newCallback, newValue };
+export { newCallback, newTag, newValue };

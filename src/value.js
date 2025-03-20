@@ -1,6 +1,10 @@
 import { StopSymbol } from "./callback.js";
-import { stack } from "./stack.js";
-import { Aggregate, stats } from "./stats.js";
+import { stack } from "./internal.js";
+import { Aggregate } from "./util.js";
+import config from "./config.js";
+
+/** @type {ReactiveValue[]} */
+export const values = [];
 
 export class ReactiveValue {
   /**
@@ -13,12 +17,12 @@ export class ReactiveValue {
     this.callbacks = new Set();
     this.resetBound = this.reset.bind(this);
 
-    if (stats._enabled) {
-      this.stats_reads = new Aggregate();
-      this.stats_writes = new Aggregate();
-      this.stats_changes = new Aggregate();
+    if (config.enableStats) {
+      this.readStats = new Aggregate();
+      this.writeStats = new Aggregate();
+      this.changedStats = new Aggregate();
       // @ts-ignore
-      stats.values.push(this);
+      values.push(this);
     }
   }
 
@@ -36,8 +40,8 @@ export class ReactiveValue {
   }
 
   read() {
-    if (this.stats_reads) {
-      this.stats_reads.counter();
+    if (this.readStats) {
+      this.readStats.counter();
     }
 
     this.#capture();
@@ -46,10 +50,10 @@ export class ReactiveValue {
 
   write(newValue, { force = false } = {}) {
     if (stack.length > 0)
-      throw new Error("infinite loop");
+      throw new Error("write used inside a reactive callback");
 
-    if (this.stats_writes) {
-      this.stats_writes.counter();
+    if (this.writeStats) {
+      this.writeStats.counter();
     }
 
     if (this.value !== newValue || force) {
@@ -73,8 +77,8 @@ export class ReactiveValue {
       console.log("removed callback", cb);
     }
 
-    if (this.stats_changes) {
-      this.stats_changes.update(performance.now() - t0);
+    if (this.changedStats) {
+      this.changedStats.update(performance.now() - t0);
     }
   }
 
@@ -82,4 +86,8 @@ export class ReactiveValue {
     this.#capture();
     return String(this.value);
   }
+}
+
+export function newValue(initialValue) {
+  return new ReactiveValue(initialValue);
 }

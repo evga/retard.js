@@ -1,30 +1,18 @@
 import { assert } from "./util.js";
-import { ReactiveCallback } from "./callback.js";
 
 export class ReactiveStack {
   #stack = [];
-  #balance = 0;
 
   constructor() { }
 
-  /**
-   *
-   * @param {ReactiveCallback} callback
-   */
-  push(callback) {
-    assert(callback instanceof ReactiveCallback);
-    this.#balance++;
-    this.#stack.push(callback);
+  push(item) {
+    this.#stack.push(item);
   }
 
-  /**
-   *
-   * @returns {ReactiveCallback}
-   */
   pop() {
-    assert(this.#balance - 1 >= 0, "unbalanced stack");
-
-    this.#balance--;
+    if(this.#stack.length === 0)
+      throw new Error('unbalanced stack');
+      
     return this.#stack.pop();
   }
 
@@ -32,12 +20,7 @@ export class ReactiveStack {
     return this.#stack.length;
   }
 
-  /**
-   * @returns {ReactiveCallback}
-   */
   get current() {
     return this.#stack[this.#stack.length - 1];
   }
 }
-
-export const stack = new ReactiveStack();

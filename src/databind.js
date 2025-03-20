@@ -1,13 +1,12 @@
 import { ReactiveCallback } from "./callback.js";
-import { assert } from "./util.js";
 import { ReactiveValue } from "./value.js";
+import { assert } from "./util.js";
 
 /**
- *
  * @param {HTMLInputElement} el
  * @param {ReactiveValue} rv
  */
-export function bindInputElement(el, rv) {
+function bindInputElement(el, rv) {
   const desc = () => `${el.tagName}[type=${el.type}].bind(${rv})`;
 
   if (el.matches('[type="checkbox"]')) {
@@ -28,11 +27,10 @@ export function bindInputElement(el, rv) {
 }
 
 /**
- *
  * @param {HTMLSelectElement} el
  * @param {ReactiveValue} rv
  */
-export function bindSelectElement(el, rv) {
+function bindSelectElement(el, rv) {
   const desc = () => `${el.tagName}.bind(${rv})`;
 
   if (el.multiple) {
@@ -49,8 +47,6 @@ export function bindSelectElement(el, rv) {
 }
 
 /**
- * 2way databind
- *
  * @param {Element} el
  * @param {ReactiveValue} rv
  */
@@ -58,9 +54,6 @@ export function bindElement(el, rv) {
   assert(el instanceof Element);
   assert(rv instanceof ReactiveValue);
 
-  if (el instanceof HTMLInputElement) {
-    bindInputElement(el, rv);
-  } else if (el instanceof HTMLSelectElement) {
-    bindSelectElement(el, rv);
-  }
+  if (el instanceof HTMLInputElement) bindInputElement(el, rv);
+  else if (el instanceof HTMLSelectElement) bindSelectElement(el, rv);
 }
