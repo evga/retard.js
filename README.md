@@ -12,9 +12,10 @@
 	* [Reactive Attributes](#ReactiveAttributes)
 	* [Components](#Components)
 * [ReactiveElement](#ReactiveElement)
-	* [attr(attributes)](#attrattributes)
-	* [bind(value)](#bindvalue)
-	* [on(eventName, listener, [options])](#oneventNamelisteneroptions)
+	* [Method: attr(obj)](#Method:attrobj)
+	* [Method: prop(obj)](#Method:propobj)
+	* [Method: bind(value)](#Method:bindvalue)
+	* [Method: on(eventName, listener, [options])](#Method:oneventNamelisteneroptions)
 * [ReactiveValue](#ReactiveValue)
 * [ReactiveCallback](#ReactiveCallback)
 * [Performance](#Performance)
@@ -230,8 +231,6 @@ Once you have a `ReactiveElement` you can enhance it with additional attributes 
 - use `.attr()` to change the element's attributes
 - etc...
 
-These are methods of `ReactiveElement` and they return the same object so you can chain them (similar to jQuery).
-
 For example if you have this html:
 ```html
 <form class="myForm" onsubmit="submitForm(event)">
@@ -347,14 +346,14 @@ TODO
 
 All methods of this class return the current element to allow chaining.
 
-### <a name='attrattributes'></a>attr(attributes)
+### <a name='Method:attrobj'></a>Method: attr(obj)
 
-Set element attributes. If the attribute is a `ReactiveValue` performs 1-way data binding.
+Set element attributes.
 
 **Parameters**:
-- attributes - Must be an object
+- obj - Must be an object
 
-**Normal usage**:
+**Example**:
 ```js
 $.div().attr({
   id: 'myDiv',
@@ -362,7 +361,7 @@ $.div().attr({
 })
 ```
 
-**Reactive example**:
+**Example (reactive)**:
 ```js
 const dynamicStyle = newValue('color: red')
 
@@ -376,8 +375,29 @@ $.div('content').attr({
 dynamicStyle.write('color: green')
 ```
 
+### <a name='Method:propobj'></a>Method: prop(obj)
 
-### <a name='bindvalue'></a>bind(value)
+Set element properties.
+
+**Parameters**:
+- obj - Must be an object
+
+**Example**:
+```js
+$.div().prop({ innerHTML: '<b>xxx</b>' })
+```
+
+**Example (reactive)**:
+```js
+const html = newValue('<b>aaa</b>')
+
+$.div().prop({ innerHTML: html })
+
+// later ...
+html.write('<b>xxx</b>')
+```
+
+### <a name='Method:bindvalue'></a>Method: bind(value)
 
 Perform 2-way data binding specific to each type of element.
 
@@ -398,7 +418,7 @@ const value = newValue('Timmy')
 $.input().bind(value)
 ```
 
-### <a name='oneventNamelisteneroptions'></a>on(eventName, listener, [options])
+### <a name='Method:oneventNamelisteneroptions'></a>Method: on(eventName, listener, [options])
 
 Wrapper for [addEventListener](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener) with some additions.
 

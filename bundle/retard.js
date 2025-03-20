@@ -462,6 +462,26 @@ class ReactiveElement {
     return this;
   }
 
+  prop(obj) {
+    assert(typeof obj === "object");
+
+    for (const key in obj) {
+      const value = obj[key];
+
+      if (value instanceof ReactiveValue) {
+        const self = this;
+        const cb = new ReactiveCallback(() => 
+          self.element[key] = value.read());
+        cb.description = `Reactive prop ${this.element.tagName}.${key} = ${value}`;
+        cb.execute();
+      } else {
+        this.element[key] = value;
+      }
+    }
+
+    return this;
+  }
+
   bind(value) {
     bindElement(this.element, value);
     return this;

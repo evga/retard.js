@@ -1,8 +1,9 @@
 import { newTag as $ } from "./retard.js";
 import counter from "../examples/counter.js";
 import todolist from "../examples/todolist.js";
+import databind from "../examples/databind.js";
 
-const devmode = todolist;
+const devmode = databind;
 
 const examples = [
   {
@@ -14,6 +15,11 @@ const examples = [
     els: todolist,
     url: 'examples/todolist.js',
     title: 'Todo list',
+  },
+  {
+    els: databind,
+    url: 'examples/databind.js',
+    title: 'Data bind',
   },
 ];
 
@@ -45,4 +51,3 @@ await buildPage();
 
 // @ts-ignore
 hljs.highlightAll();
-
