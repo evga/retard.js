@@ -173,7 +173,7 @@ age.changed()
 
 ### <a name='ReactiveElements'></a>Reactive Elements
 
-A `ReactiveElement` object is a wrapper for the `Element` object returned by the `document.createElement()` function.
+A `ReactiveElement` object is a wrapper for the result of `document.createElement()`.
 
 Use the `$` function to create a `ReactiveElement`:
 
