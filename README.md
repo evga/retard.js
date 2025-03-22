@@ -1,6 +1,6 @@
 # RETARD.js
 
-Reactive Javascript framework:
+Reactive Javascript Framework
 
 ## Examples
 
