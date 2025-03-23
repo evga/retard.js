@@ -104,7 +104,7 @@ class ReactiveChild {
         }
         return node;
       }
-      skip += (typeof c === "function") ? c.clen : 1;
+      skip += (c instanceof ReactiveChild) ? c.clen : 1;
     }
 
     throw new Error("function not found");
