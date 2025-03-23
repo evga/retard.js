@@ -8,7 +8,7 @@ export const StopSymbol = Symbol("stop");
 export const callbacks = [];
 
 export class ReactiveCallback {
-  #stopped = false;
+  stopped = false;
   description;
   userCallback;
 
@@ -27,16 +27,12 @@ export class ReactiveCallback {
     }
   }
 
-  stop() {
-    this.#stopped = true;
-  }
-
   execute(...args) {
-    const t0 = performance.now();
-
-    if (this.#stopped)
+    if (this.stopped)
       return StopSymbol;
 
+    const t0 = performance.now();
+    
     stack.push(this);
     try {
       return this.callback(...args);

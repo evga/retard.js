@@ -3,6 +3,7 @@ import { assert } from "./util.js";
 import { ReactiveContainer } from "./container.js";
 import { ReactiveValue } from "./value.js";
 import { ReactiveCallback } from "./callback.js";
+import { regAddCallback, regAddEvent } from "./registry.js";
 
 // <key>
 const eventKeyRegex = new RegExp("^<(\\w+)>$");
@@ -34,7 +35,7 @@ export class ReactiveElement {
 
       if (value instanceof ReactiveValue) {
         const self = this;
-        const cb = new ReactiveCallback(() => 
+        const cb = regAddCallback(this.element, () => 
           self.element.setAttribute(key, value.read()));
         cb.description = `Reactive attribute ${this.element.tagName}.${key} = ${value}`;
         cb.execute();
@@ -54,7 +55,7 @@ export class ReactiveElement {
 
       if (value instanceof ReactiveValue) {
         const self = this;
-        const cb = new ReactiveCallback(() => 
+        const cb = regAddCallback(this.element, () => 
           self.element[key] = value.read());
         cb.description = `Reactive prop ${this.element.tagName}.${key} = ${value}`;
         cb.execute();
@@ -89,16 +90,16 @@ export class ReactiveElement {
         const attrName = eventFilter[2];
         const attrValue = eventFilter[3];
 
-        this.element.addEventListener(name, function (e) {
+        regAddEvent(this.element, name, function (e) {
           if (e[attrName] && e[attrName] == attrValue) // NO strict equality
             listener.call(this, e); // keep this = Element
         }, options);
 
       } else {
-        this.element.addEventListener(eventName, listener, options);
+        regAddEvent(this.element, eventName, listener, options);
       }
     } else {
-      this.element.addEventListener(eventName, listener, options);
+      regAddEvent(this.element, eventName, listener, options);
     }
 
     return this;

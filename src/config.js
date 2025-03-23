@@ -1,3 +1,3 @@
 export default {
-  enableStats: true
+  enableStats: false
 }

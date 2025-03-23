@@ -1,5 +1,6 @@
 import { assert } from './util.js';
 import { ReactiveCallback } from './callback.js';
+import { regAddCallback, regDetach } from './registry.js';
 
 /*
 
@@ -79,7 +80,7 @@ class ReactiveChild {
     this.userCallback = userCallback;
     this.firstInvocation = true;
     this.clen = 0;
-    this.callback = new ReactiveCallback(() => this.#swap());
+    this.callback = regAddCallback(container.element, () => this.#swap());
     this.callback.userCallback = userCallback;
   }
 
@@ -140,15 +141,18 @@ class ReactiveChild {
         this.container.element.append(...fnChilds);
       } else {
         while (removeCnt--) {
-          if (node === null) throw new Error("child expected");
+          if (node === null) 
+            throw new Error("child expected");
 
           const tmp = node;
 
           node = node.nextSibling;
 
-          if (tmp.parentNode === null) throw new Error("parentNode is null");
+          if (tmp.parentNode === null) 
+            throw new Error("parentNode is null");
 
           tmp.parentNode.removeChild(tmp);
+          regDetach(tmp);
         }
 
         if (fnChilds.length > 0) {

@@ -1,6 +1,7 @@
 import { Aggregate } from "./util.js";
 import { callbacks } from "./callback.js";
 import { values } from "./value.js";
+import { regCallbacks, regEvents } from "./registry.js";
 
 /*export const stats = {
   tags: {},
@@ -76,9 +77,17 @@ function callbackDesc(c) {
 
 export function report({ tags = true, details = false } = {}) {
   return tag("table", {
-    style: "border-collapse: collapse; font-size: 12px; width: 100%"
+    style: "border-collapse: collapse; font-family: monospace; font-size: 12px; width: 100%"
   })(
     tline("metric", "cnt", "sum", "min", "max", "avg"),
+    tsection(`Events`),
+    ...regEvents().map(c => [
+      tspan(`${c[0].tagName}.on${c[1]} >>> ${c[2]}`)
+    ]),
+    tsection(`Callbacks`),
+    ...regCallbacks().map(c => [
+      tspan(`${c[0].tagName} >>> ${c[1].callback}`)
+    ]),
     tags ? tsection(`Tags`) : "",
     //...Object.entries(stats.tags).map(([k, v]) => [tags ? tline(k, v) : ""]),
     tsection(`Values: ${values.length}`),

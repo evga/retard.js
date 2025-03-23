@@ -53,16 +53,16 @@ class Stack {
 const stack = new Stack();
 
 var config = {
-  enableStats: true
+  enableStats: false
 };
 
 const StopSymbol = Symbol("stop");
 
 /** @type {ReactiveCallback[]} */
-const callbacks = [];
+const callbacks$1 = [];
 
 class ReactiveCallback {
-  #stopped = false;
+  stopped = false;
   description;
   userCallback;
 
@@ -77,20 +77,16 @@ class ReactiveCallback {
 
     if (config.enableStats) {
       this.executeStats = new Aggregate();
-      callbacks.push(this);
+      callbacks$1.push(this);
     }
   }
 
-  stop() {
-    this.#stopped = true;
-  }
-
   execute(...args) {
-    const t0 = performance.now();
-
-    if (this.#stopped)
+    if (this.stopped)
       return StopSymbol;
 
+    const t0 = performance.now();
+    
     stack.push(this);
     try {
       return this.callback(...args);
@@ -203,25 +199,89 @@ function newValue(initialValue) {
   return new ReactiveValue(initialValue);
 }
 
+// Global registry
+
+
+// [obj, name listener, options]
+let events = [];
+
+// [obj, ReactiveCallback]
+let callbacks = [];
+
+function regEvents() {
+  return events;
+}
+
+function regCallbacks() {
+  return callbacks;
+}
+
+/**
+ * 
+ * @param {EventTarget} obj 
+ * @param {*} name 
+ * @param {*} listener 
+ * @param {*} [options]
+ */
+function regAddEvent(obj, name, listener, options) {
+  obj.addEventListener(name, listener, options);
+  events.push([obj, name, listener, options]);
+}
+
+/**
+ * 
+ * @param {*} obj 
+ * @param {Function} fn 
+ * @returns 
+ */
+function regAddCallback(obj, fn) {
+  assert(fn instanceof Function);
+
+  const cb = new ReactiveCallback(fn);
+  callbacks.push([obj, cb]);
+  return cb;
+}
+
+
+function regDetach(obj) {
+  for (const item of events) {
+    if (item[0] === obj) {
+      item[0].removeEventListener(item[1], item[2], item[3]);
+    }
+  }
+  
+  for (const item of callbacks) {
+    if (item[0] === obj) {
+      item[1].stopped = true;
+      item[1].callback = null;
+      item[1].description = null;
+      item[1].userCallback = null;
+    }
+  }
+
+  events = events.filter(v => v[0] !== obj);
+  callbacks = callbacks.filter(v => v[0] !== obj);
+}
+
 /**
  * @param {HTMLInputElement} el
  * @param {ReactiveValue} rv
  */
 function bindInputElement(el, rv) {
-  const desc = () => `${el.tagName}[type=${el.type}].bind(${rv})`;
+  const desc = `${el.tagName}[type=${el.type}].bind(${rv.value})`;
 
   if (el.matches('[type="checkbox"]')) {
     const setRV = () => rv.write(el.checked);
     const setEL = () => (el.checked = rv.read());
-    el.addEventListener("change", setRV);
-    const cb = new ReactiveCallback(setEL);
+    regAddEvent(el, "change", setRV);
+    const cb = regAddCallback(el, setEL);
     cb.description = desc;
     cb.execute();
   } else {
     const setRV = () => rv.write(el.value);
     const setEL = () => (el.value = rv.read());
-    el.addEventListener("input", setRV);
-    const cb = new ReactiveCallback(setEL);
+    regAddEvent(el, "input", setRV);
+    const cb = regAddCallback(el, setEL);
     cb.description = desc;
     cb.execute();
   }
@@ -232,7 +292,7 @@ function bindInputElement(el, rv) {
  * @param {ReactiveValue} rv
  */
 function bindSelectElement(el, rv) {
-  const desc = () => `${el.tagName}.bind(${rv})`;
+  const desc = `${el.tagName}.bind(${rv.value})`;
 
   if (el.multiple) {
     // TODO
@@ -240,8 +300,9 @@ function bindSelectElement(el, rv) {
     // single
     const setRV = () => rv.write(el.value);
     const setEL = () => (el.value = rv.read());
-    el.addEventListener("change", setRV);
-    const cb = new ReactiveCallback(setEL);
+    regAddEvent(el, "change", setRV);
+    
+    const cb = regAddCallback(el, setEL);
     cb.description = desc;
     cb.execute();
   }
@@ -337,7 +398,7 @@ class ReactiveChild {
     this.userCallback = userCallback;
     this.firstInvocation = true;
     this.clen = 0;
-    this.callback = new ReactiveCallback(() => this.#swap());
+    this.callback = regAddCallback(container.element, () => this.#swap());
     this.callback.userCallback = userCallback;
   }
 
@@ -398,15 +459,18 @@ class ReactiveChild {
         this.container.element.append(...fnChilds);
       } else {
         while (removeCnt--) {
-          if (node === null) throw new Error("child expected");
+          if (node === null) 
+            throw new Error("child expected");
 
           const tmp = node;
 
           node = node.nextSibling;
 
-          if (tmp.parentNode === null) throw new Error("parentNode is null");
+          if (tmp.parentNode === null) 
+            throw new Error("parentNode is null");
 
           tmp.parentNode.removeChild(tmp);
+          regDetach(tmp);
         }
 
         if (fnChilds.length > 0) {
@@ -459,7 +523,7 @@ class ReactiveElement {
 
       if (value instanceof ReactiveValue) {
         const self = this;
-        const cb = new ReactiveCallback(() => 
+        const cb = regAddCallback(this.element, () => 
           self.element.setAttribute(key, value.read()));
         cb.description = `Reactive attribute ${this.element.tagName}.${key} = ${value}`;
         cb.execute();
@@ -479,7 +543,7 @@ class ReactiveElement {
 
       if (value instanceof ReactiveValue) {
         const self = this;
-        const cb = new ReactiveCallback(() => 
+        const cb = regAddCallback(this.element, () => 
           self.element[key] = value.read());
         cb.description = `Reactive prop ${this.element.tagName}.${key} = ${value}`;
         cb.execute();
@@ -514,16 +578,16 @@ class ReactiveElement {
         const attrName = eventFilter[2];
         const attrValue = eventFilter[3];
 
-        this.element.addEventListener(name, function (e) {
+        regAddEvent(this.element, name, function (e) {
           if (e[attrName] && e[attrName] == attrValue) // NO strict equality
             listener.call(this, e); // keep this = Element
         }, options);
 
       } else {
-        this.element.addEventListener(eventName, listener, options);
+        regAddEvent(this.element, eventName, listener, options);
       }
     } else {
-      this.element.addEventListener(eventName, listener, options);
+      regAddEvent(this.element, eventName, listener, options);
     }
 
     return this;
@@ -830,9 +894,17 @@ function callbackDesc(c) {
 
 function report({ tags = true, details = false } = {}) {
   return tag("table", {
-    style: "border-collapse: collapse; font-size: 12px; width: 100%"
+    style: "border-collapse: collapse; font-family: monospace; font-size: 12px; width: 100%"
   })(
     tline("metric", "cnt", "sum", "min", "max", "avg"),
+    tsection(`Events`),
+    ...regEvents().map(c => [
+      tspan(`${c[0].tagName}.on${c[1]} >>> ${c[2]}`)
+    ]),
+    tsection(`Callbacks`),
+    ...regCallbacks().map(c => [
+      tspan(`${c[0].tagName} >>> ${c[1].callback}`)
+    ]),
     tags ? tsection(`Tags`) : "",
     //...Object.entries(stats.tags).map(([k, v]) => [tags ? tline(k, v) : ""]),
     tsection(`Values: ${values.length}`),
@@ -844,8 +916,8 @@ function report({ tags = true, details = false } = {}) {
       details ? tline("writes", c.writeStats) : "",
       details ? tline("changes", c.changedStats) : ""
     ]),
-    tsection(`Callbacks: ${callbacks.length}`),
-    ...callbacks.map((c) => [
+    tsection(`Callbacks: ${callbacks$1.length}`),
+    ...callbacks$1.map((c) => [
       tspan(callbackDesc(c)),
       //details ? tline(`stopped=${c.stopped}`) : "",
       details ? tline("execute", c.executeStats) : ""
