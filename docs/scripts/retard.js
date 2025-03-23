@@ -184,6 +184,15 @@ class ReactiveValue {
     }
   }
 
+  map(cb) {
+    this.capture();
+    if(Array.isArray(this.value)){
+      return this.value.map(cb)
+    } else {
+      throw new Error("no array");
+    }
+  }
+
   toString() {
     this.capture();
     return String(this.value);
@@ -353,7 +362,7 @@ class ReactiveChild {
         }
         return node;
       }
-      skip += (typeof c === "function") ? c.clen : 1;
+      skip += (c instanceof ReactiveChild) ? c.clen : 1;
     }
 
     throw new Error("function not found");
