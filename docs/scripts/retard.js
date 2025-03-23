@@ -64,7 +64,6 @@ const callbacks$1 = [];
 class ReactiveCallback {
   stopped = false;
   description;
-  userCallback;
 
   /**
    * 
@@ -255,7 +254,6 @@ function regDetach(obj) {
       item[1].stopped = true;
       item[1].callback = null;
       item[1].description = null;
-      item[1].userCallback = null;
     }
   }
 
@@ -399,7 +397,7 @@ class ReactiveChild {
     this.firstInvocation = true;
     this.clen = 0;
     this.callback = regAddCallback(container.element, () => this.#swap());
-    this.callback.userCallback = userCallback;
+    this.callback.description = `ReactiveChild(${userCallback})`;
   }
 
   #insertionPoint() {
@@ -881,29 +879,18 @@ function tline(desc, cnt, sum, min, max, avg) {
   );
 }
 
-function callbackDesc(c) {
-  if (c.description) {
-    if (typeof c.description === "function") return c.description();
-    else return c.description;
-  } else if (c.userCallback) {
-    return String(c.userCallback);
-  } else {
-    return String(c.callback);
-  }
-}
-
 function report({ tags = true, details = false } = {}) {
   return tag("table", {
     style: "border-collapse: collapse; font-family: monospace; font-size: 12px; width: 100%"
   })(
     tline("metric", "cnt", "sum", "min", "max", "avg"),
-    tsection(`Events`),
+    tsection(`Registry:Events`),
     ...regEvents().map(c => [
-      tspan(`${c[0].tagName}.on${c[1]} >>> ${c[2]}`)
+      tspan(`${c[0].tagName}.on${c[1]} --- ${c[2]}`)
     ]),
-    tsection(`Callbacks`),
+    tsection(`Registry:Callbacks`),
     ...regCallbacks().map(c => [
-      tspan(`${c[0].tagName} >>> ${c[1].callback}`)
+      tspan(`${c[0].tagName} >>> ${c[1].description ?? c[1].callback}`)
     ]),
     tags ? tsection(`Tags`) : "",
     //...Object.entries(stats.tags).map(([k, v]) => [tags ? tline(k, v) : ""]),
@@ -918,7 +905,7 @@ function report({ tags = true, details = false } = {}) {
     ]),
     tsection(`Callbacks: ${callbacks$1.length}`),
     ...callbacks$1.map((c) => [
-      tspan(callbackDesc(c)),
+      tspan(`${c}`),
       //details ? tline(`stopped=${c.stopped}`) : "",
       details ? tline("execute", c.executeStats) : ""
     ])

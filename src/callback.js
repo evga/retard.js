@@ -10,7 +10,6 @@ export const callbacks = [];
 export class ReactiveCallback {
   stopped = false;
   description;
-  userCallback;
 
   /**
    * 

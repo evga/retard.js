@@ -81,7 +81,7 @@ class ReactiveChild {
     this.firstInvocation = true;
     this.clen = 0;
     this.callback = regAddCallback(container.element, () => this.#swap());
-    this.callback.userCallback = userCallback;
+    this.callback.description = `ReactiveChild(${userCallback})`;
   }
 
   #insertionPoint() {

@@ -56,7 +56,6 @@ export function regDetach(obj) {
       item[1].stopped = true;
       item[1].callback = null;
       item[1].description = null;
-      item[1].userCallback = null;
     }
   }
 
