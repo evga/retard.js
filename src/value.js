@@ -1,6 +1,6 @@
 import { StopSymbol } from "./callback.js";
 import { stack } from "./stack.js";
-import { Aggregate } from "./util.js";
+import { Aggregate, assert } from "./util.js";
 import config from "./config.js";
 
 /** @type {ReactiveValue[]} */
@@ -78,6 +78,15 @@ export class ReactiveValue {
 
     if (this.changedStats) {
       this.changedStats.update(performance.now() - t0);
+    }
+  }
+
+  map(cb) {
+    this.capture();
+    if(Array.isArray(this.value)){
+      return this.value.map(cb)
+    } else {
+      throw new Error("no array");
     }
   }
 
