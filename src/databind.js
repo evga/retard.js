@@ -1,4 +1,3 @@
-import { ReactiveCallback } from "./callback.js";
 import { ReactiveValue } from "./value.js";
 import { assert } from "./util.js";
 import { regAddCallback, regAddEvent } from "./registry.js";
@@ -15,14 +14,14 @@ function bindInputElement(el, rv) {
     const setEL = () => (el.checked = rv.read());
     regAddEvent(el, "change", setRV);
     const cb = regAddCallback(el, setEL);
-    cb.description = desc;
+    cb.desc = desc;
     cb.execute();
   } else {
     const setRV = () => rv.write(el.value);
     const setEL = () => (el.value = rv.read());
     regAddEvent(el, "input", setRV);
     const cb = regAddCallback(el, setEL);
-    cb.description = desc;
+    cb.desc = desc;
     cb.execute();
   }
 }
@@ -43,7 +42,7 @@ function bindSelectElement(el, rv) {
     regAddEvent(el, "change", setRV);
     
     const cb = regAddCallback(el, setEL);
-    cb.description = desc;
+    cb.desc = desc;
     cb.execute();
   }
 }

@@ -1,3 +1,4 @@
 export default {
-  enableStats: false
+  enableStats: false,
+  enableLog: true
 }

@@ -1,7 +1,8 @@
 // Global registry
 
-import { ReactiveCallback } from "./callback";
-import { assert } from "./util";
+import { ReactiveCallback } from "./callback.js";
+import config from "./config.js";
+import { assert } from "./util.js";
 
 // [obj, name listener, options]
 let events = [];
@@ -47,13 +48,16 @@ export function regAddCallback(obj, fn) {
 export function regDetach(obj) {
   for (const item of events) {
     if (item[0] === obj) {
+      if (config.enableLog)
+        console.debug(`DETACH ${item}`);
       item[0].removeEventListener(item[1], item[2], item[3]);
     }
   }
-  
+
   for (const item of callbacks) {
     if (item[0] === obj) {
-      item[1].stopped = true;
+      if (config.enableLog)
+        console.debug(`DETACH ${item}`);
       item[1].callback = null;
       item[1].description = null;
     }

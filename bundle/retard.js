@@ -53,47 +53,59 @@ class Stack {
 const stack = new Stack();
 
 var config = {
-  enableStats: false
+  enableStats: false,
+  enableLog: true
 };
+
+let NEXT_ID$1 = 1;
 
 const StopSymbol = Symbol("stop");
 
-/** @type {ReactiveCallback[]} */
-const callbacks$1 = [];
+///** @type {ReactiveCallback[]} */
+//export const callbacks = [];
 
 class ReactiveCallback {
-  stopped = false;
-  description;
+  #id = NEXT_ID$1++;
+  desc;
 
   /**
-   * 
-   * @param {Function} callback 
+   * @param {Function} fn 
    */
-  constructor(callback) {
-    assert(callback instanceof Function);
+  constructor(fn) {
+    assert(fn instanceof Function);
 
-    this.callback = callback;
+    this.fn = fn;
 
     if (config.enableStats) {
       this.executeStats = new Aggregate();
-      callbacks$1.push(this);
+      //callbacks.push(this);
     }
+
+    if (config.enableLog)
+      console.debug(`NEW RC#${this.#id} = ${fn}`);
   }
 
   execute(...args) {
-    if (this.stopped)
+    if (typeof this.fn !== 'function')
       return StopSymbol;
 
     const t0 = performance.now();
-    
+
+    if (config.enableLog)
+      console.debug(`EXECUTE ${this}`);
+
     stack.push(this);
     try {
-      return this.callback(...args);
+      return this.fn(...args);
     } finally {
       stack.pop();
       if (this.executeStats)
         this.executeStats.update(performance.now() - t0);
     }
+  }
+
+  toString() {
+    return `CB#${this.#id} ${this.desc ?? this.fn}`;
   }
 }
 
@@ -101,10 +113,14 @@ function newCallback(callback) {
   return new ReactiveCallback(callback);
 }
 
+let NEXT_ID = 1;
+
 /** @type {ReactiveValue[]} */
 const values = [];
 
 class ReactiveValue {
+  #id = NEXT_ID++;
+
   /**
    *
    * @param {*} initialValue
@@ -122,11 +138,17 @@ class ReactiveValue {
       // @ts-ignore
       values.push(this);
     }
+
+    if (config.enableLog)
+      console.debug(`NEW RV#${this.#id} = ${this.value}`);
   }
 
   capture() {
     if (stack.current) {
       this.callbacks.add(stack.current);
+
+      if (config.enableLog)
+        console.debug(`CAPTURE RV#${this.#id} <<< ${stack.current}`);
     }
   }
 
@@ -161,16 +183,23 @@ class ReactiveValue {
   }
 
   changed() {
+    if (config.enableLog)
+      console.debug(`CHANGED ${this.value}`);
+
     const t0 = performance.now();
     const toRemove = [];
 
     for (const cb of this.callbacks) {
-      if (cb.execute() === StopSymbol) 
+      if (cb.execute() === StopSymbol) {
         toRemove.push(cb);
+
+      }
     }
 
     for (const cb of toRemove) {
       this.callbacks.delete(cb);
+      if (config.enableLog)
+        console.debug(`LETGO ${cb}`);
       //console.log("removed callback", cb);
     }
 
@@ -181,8 +210,8 @@ class ReactiveValue {
 
   map(cb) {
     this.capture();
-    if(Array.isArray(this.value)){
-      return this.value.map(cb)
+    if (Array.isArray(this.value)) {
+      return this.value.map(cb);
     } else {
       throw new Error("no array");
     }
@@ -245,13 +274,16 @@ function regAddCallback(obj, fn) {
 function regDetach(obj) {
   for (const item of events) {
     if (item[0] === obj) {
+      if (config.enableLog)
+        console.debug(`DETACH ${item}`);
       item[0].removeEventListener(item[1], item[2], item[3]);
     }
   }
-  
+
   for (const item of callbacks) {
     if (item[0] === obj) {
-      item[1].stopped = true;
+      if (config.enableLog)
+        console.debug(`DETACH ${item}`);
       item[1].callback = null;
       item[1].description = null;
     }
@@ -273,14 +305,14 @@ function bindInputElement(el, rv) {
     const setEL = () => (el.checked = rv.read());
     regAddEvent(el, "change", setRV);
     const cb = regAddCallback(el, setEL);
-    cb.description = desc;
+    cb.desc = desc;
     cb.execute();
   } else {
     const setRV = () => rv.write(el.value);
     const setEL = () => (el.value = rv.read());
     regAddEvent(el, "input", setRV);
     const cb = regAddCallback(el, setEL);
-    cb.description = desc;
+    cb.desc = desc;
     cb.execute();
   }
 }
@@ -301,7 +333,7 @@ function bindSelectElement(el, rv) {
     regAddEvent(el, "change", setRV);
     
     const cb = regAddCallback(el, setEL);
-    cb.description = desc;
+    cb.desc = desc;
     cb.execute();
   }
 }
@@ -397,7 +429,7 @@ class ReactiveChild {
     this.firstInvocation = true;
     this.clen = 0;
     this.callback = regAddCallback(container.element, () => this.#swap());
-    this.callback.description = `ReactiveChild(${userCallback})`;
+    this.callback.desc = `ReactiveChild(${userCallback})`;
   }
 
   #insertionPoint() {
@@ -428,7 +460,7 @@ class ReactiveChild {
   }
 
   #swap() {
-    assert(this instanceof ReactiveChild);
+    //assert(this instanceof ReactiveChild);
 
     if (!this.firstInvocation)
       this.container.check();
@@ -523,7 +555,7 @@ class ReactiveElement {
         const self = this;
         const cb = regAddCallback(this.element, () => 
           self.element.setAttribute(key, value.read()));
-        cb.description = `Reactive attribute ${this.element.tagName}.${key} = ${value}`;
+        cb.desc = `Reactive attribute ${this.element.tagName}.${key} = ${value}`;
         cb.execute();
       } else {
         this.element.setAttribute(key, value);
@@ -543,7 +575,7 @@ class ReactiveElement {
         const self = this;
         const cb = regAddCallback(this.element, () => 
           self.element[key] = value.read());
-        cb.description = `Reactive prop ${this.element.tagName}.${key} = ${value}`;
+        cb.desc = `Reactive prop ${this.element.tagName}.${key} = ${value}`;
         cb.execute();
       } else {
         this.element[key] = value;
@@ -818,19 +850,6 @@ newTag.IF = function (arg0) {
   }
 };
 
-/*export const stats = {
-  tags: {},
-  addTag: function (tagName) {
-    if (stats.tags[tagName] === undefined) {
-      stats.tags[tagName] = new Aggregate();
-    }
-    stats.tags[tagName].counter();
-  }
-  //elements: []
-};*/
-
-
-
 function tag(tagName, attr) {
   const el = document.createElement(tagName);
   if (typeof attr === "object") {
@@ -890,9 +909,10 @@ function report({ tags = true, details = false } = {}) {
     ]),
     tsection(`Registry:Callbacks`),
     ...regCallbacks().map(c => [
-      tspan(`${c[0].tagName} >>> ${c[1].description ?? c[1].callback}`)
+      tspan(`${c[0].tagName} >>> ${c[1]}`),
+      tline('execute', c.executeStats)
     ]),
-    tags ? tsection(`Tags`) : "",
+    //tags ? tsection(`Tags`) : "",
     //...Object.entries(stats.tags).map(([k, v]) => [tags ? tline(k, v) : ""]),
     tsection(`Values: ${values.length}`),
     ...values.map((c) => [
@@ -903,12 +923,12 @@ function report({ tags = true, details = false } = {}) {
       details ? tline("writes", c.writeStats) : "",
       details ? tline("changes", c.changedStats) : ""
     ]),
-    tsection(`Callbacks: ${callbacks$1.length}`),
-    ...callbacks$1.map((c) => [
-      tspan(`${c}`),
+    //tsection(`Callbacks: ${callbacks.length}`),
+    //...callbacks.map((c) => [
+      //tspan(`${c}`),
       //details ? tline(`stopped=${c.stopped}`) : "",
-      details ? tline("execute", c.executeStats) : ""
-    ])
+      //details ? tline("execute", c.executeStats) : ""
+    //])
   );
 }
 

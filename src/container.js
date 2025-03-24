@@ -1,5 +1,4 @@
 import { assert } from './util.js';
-import { ReactiveCallback } from './callback.js';
 import { regAddCallback, regDetach } from './registry.js';
 
 /*
@@ -81,7 +80,7 @@ class ReactiveChild {
     this.firstInvocation = true;
     this.clen = 0;
     this.callback = regAddCallback(container.element, () => this.#swap());
-    this.callback.description = `ReactiveChild(${userCallback})`;
+    this.callback.desc = `ReactiveChild(${userCallback})`;
   }
 
   #insertionPoint() {
@@ -112,7 +111,7 @@ class ReactiveChild {
   }
 
   #swap() {
-    assert(this instanceof ReactiveChild);
+    //assert(this instanceof ReactiveChild);
 
     if (!this.firstInvocation)
       this.container.check();

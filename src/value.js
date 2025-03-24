@@ -3,10 +3,14 @@ import { stack } from "./stack.js";
 import { Aggregate, assert } from "./util.js";
 import config from "./config.js";
 
+let NEXT_ID = 1;
+
 /** @type {ReactiveValue[]} */
 export const values = [];
 
 export class ReactiveValue {
+  #id = NEXT_ID++;
+
   /**
    *
    * @param {*} initialValue
@@ -24,11 +28,17 @@ export class ReactiveValue {
       // @ts-ignore
       values.push(this);
     }
+
+    if (config.enableLog)
+      console.debug(`NEW RV#${this.#id} = ${this.value}`);
   }
 
   capture() {
     if (stack.current) {
       this.callbacks.add(stack.current);
+
+      if (config.enableLog)
+        console.debug(`CAPTURE RV#${this.#id} <<< ${stack.current}`);
     }
   }
 
@@ -63,16 +73,23 @@ export class ReactiveValue {
   }
 
   changed() {
+    if (config.enableLog)
+      console.debug(`CHANGED ${this.value}`);
+
     const t0 = performance.now();
     const toRemove = [];
 
     for (const cb of this.callbacks) {
-      if (cb.execute() === StopSymbol) 
+      if (cb.execute() === StopSymbol) {
         toRemove.push(cb);
+
+      }
     }
 
     for (const cb of toRemove) {
       this.callbacks.delete(cb);
+      if (config.enableLog)
+        console.debug(`LETGO ${cb}`);
       //console.log("removed callback", cb);
     }
 
@@ -83,8 +100,8 @@ export class ReactiveValue {
 
   map(cb) {
     this.capture();
-    if(Array.isArray(this.value)){
-      return this.value.map(cb)
+    if (Array.isArray(this.value)) {
+      return this.value.map(cb);
     } else {
       throw new Error("no array");
     }

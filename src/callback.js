@@ -2,44 +2,55 @@ import { assert, Aggregate } from "./util.js";
 import { stack } from "./stack.js";
 import config from "./config.js";
 
+let NEXT_ID = 1;
+
 export const StopSymbol = Symbol("stop");
 
-/** @type {ReactiveCallback[]} */
-export const callbacks = [];
+///** @type {ReactiveCallback[]} */
+//export const callbacks = [];
 
 export class ReactiveCallback {
-  stopped = false;
-  description;
+  #id = NEXT_ID++;
+  desc;
 
   /**
-   * 
-   * @param {Function} callback 
+   * @param {Function} fn 
    */
-  constructor(callback) {
-    assert(callback instanceof Function);
+  constructor(fn) {
+    assert(fn instanceof Function);
 
-    this.callback = callback;
+    this.fn = fn;
 
     if (config.enableStats) {
       this.executeStats = new Aggregate();
-      callbacks.push(this);
+      //callbacks.push(this);
     }
+
+    if (config.enableLog)
+      console.debug(`NEW RC#${this.#id} = ${fn}`);
   }
 
   execute(...args) {
-    if (this.stopped)
+    if (typeof this.fn !== 'function')
       return StopSymbol;
 
     const t0 = performance.now();
-    
+
+    if (config.enableLog)
+      console.debug(`EXECUTE ${this}`);
+
     stack.push(this);
     try {
-      return this.callback(...args);
+      return this.fn(...args);
     } finally {
       stack.pop();
       if (this.executeStats)
         this.executeStats.update(performance.now() - t0);
     }
+  }
+
+  toString() {
+    return `CB#${this.#id} ${this.desc ?? this.fn}`;
   }
 }
 

@@ -1,20 +1,7 @@
 import { Aggregate } from "./util.js";
-import { callbacks } from "./callback.js";
+//import { callbacks } from "./callback.js";
 import { values } from "./value.js";
 import { regCallbacks, regEvents } from "./registry.js";
-
-/*export const stats = {
-  tags: {},
-  addTag: function (tagName) {
-    if (stats.tags[tagName] === undefined) {
-      stats.tags[tagName] = new Aggregate();
-    }
-    stats.tags[tagName].counter();
-  }
-  //elements: []
-};*/
-
-
 
 function tag(tagName, attr) {
   const el = document.createElement(tagName);
@@ -75,9 +62,10 @@ export function report({ tags = true, details = false } = {}) {
     ]),
     tsection(`Registry:Callbacks`),
     ...regCallbacks().map(c => [
-      tspan(`${c[0].tagName} >>> ${c[1].description ?? c[1].callback}`)
+      tspan(`${c[0].tagName} >>> ${c[1]}`),
+      tline('execute', c.executeStats)
     ]),
-    tags ? tsection(`Tags`) : "",
+    //tags ? tsection(`Tags`) : "",
     //...Object.entries(stats.tags).map(([k, v]) => [tags ? tline(k, v) : ""]),
     tsection(`Values: ${values.length}`),
     ...values.map((c) => [
@@ -88,11 +76,11 @@ export function report({ tags = true, details = false } = {}) {
       details ? tline("writes", c.writeStats) : "",
       details ? tline("changes", c.changedStats) : ""
     ]),
-    tsection(`Callbacks: ${callbacks.length}`),
-    ...callbacks.map((c) => [
-      tspan(`${c}`),
+    //tsection(`Callbacks: ${callbacks.length}`),
+    //...callbacks.map((c) => [
+      //tspan(`${c}`),
       //details ? tline(`stopped=${c.stopped}`) : "",
-      details ? tline("execute", c.executeStats) : ""
-    ])
+      //details ? tline("execute", c.executeStats) : ""
+    //])
   );
 }

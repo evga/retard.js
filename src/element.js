@@ -2,7 +2,6 @@ import { bindElement } from "./databind.js";
 import { assert } from "./util.js";
 import { ReactiveContainer } from "./container.js";
 import { ReactiveValue } from "./value.js";
-import { ReactiveCallback } from "./callback.js";
 import { regAddCallback, regAddEvent } from "./registry.js";
 
 // <key>
@@ -37,7 +36,7 @@ export class ReactiveElement {
         const self = this;
         const cb = regAddCallback(this.element, () => 
           self.element.setAttribute(key, value.read()));
-        cb.description = `Reactive attribute ${this.element.tagName}.${key} = ${value}`;
+        cb.desc = `Reactive attribute ${this.element.tagName}.${key} = ${value}`;
         cb.execute();
       } else {
         this.element.setAttribute(key, value);
@@ -57,7 +56,7 @@ export class ReactiveElement {
         const self = this;
         const cb = regAddCallback(this.element, () => 
           self.element[key] = value.read());
-        cb.description = `Reactive prop ${this.element.tagName}.${key} = ${value}`;
+        cb.desc = `Reactive prop ${this.element.tagName}.${key} = ${value}`;
         cb.execute();
       } else {
         this.element[key] = value;
